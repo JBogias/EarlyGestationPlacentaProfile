@@ -1,0 +1,295 @@
+---
+title: "Early Gestation GO analysis"
+author: "Justin Bogias"
+date: "`r format(Sys.Date(), '%d %b, %Y')`"
+output: 
+  html_document: 
+    toc: yes
+    code_folding: hide
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE)
+```
+
+# Library Preparation
+```{r packages, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(AnnotationHub)
+library(ensembldb)
+library(goseq)
+library(rrvgo)
+library(org.Hs.eg.db)
+library(DT)
+library(here)
+```
+
+I do a lot of plotting of potential sources of bias a bit further below, so my sympathies are with the reader due to the janky code I've gracefully employed here.
+
+# Data import
+```{r significance_data}
+oxygenGenes <- read_csv(here("data/results/oxygenGenes.csv.gz"))
+oxygenTranscripts <- read_csv(here("data/results/oxygenTranscripts.csv.gz"))
+oxygenDTU <- read_csv(here("data/results/oxygenDTU.csv.gz"))
+
+impure_samples <- c(
+  "PAC006", "PAC008", "PAC024", "PAC025",
+  "PAC034", "PAC035", "PAC039", "PAC041", 
+  "PAC036", "PAC045", "PAC071", "PAC131"
+  )
+
+pd <- here("data/metadata/metadata.csv") %>%
+  read_csv() %>%
+  dplyr::filter(Cohort == "PAC") %>%
+  mutate(Trimester = as.factor(Trimester),
+         Timepoint = ifelse(GestationalAge <= 10,
+                            "6-10weeks",
+                            "11-23weeks")) %>%
+  dplyr::filter(!ID %in% impure_samples) %>%
+  arrange(ID)
+
+# metadata needs to be in this structure
+age_order <- dplyr::arrange(pd, as.numeric(GestationalAge)) %>% 
+  dplyr::select(ID, GestationalAge)
+```
+
+# Import annotations
+Load in the ensembl gene annotations here to be used throughout the DTE analysis. This will connect to an ensembl annotation database in which the ensembl version 99 metadata will be stored as an object, giving information on the transcript ID, length, gc content, biotype and other information. This step may take some time as the data can be somewhat large.
+```{r genesGR}
+ah <- AnnotationHub()
+ensDb <- ah[["AH78783"]]
+
+genesGR <- genes(ensDb)
+genesGR$length <- lengthOf(ensDb, "gene")
+transGR <- transcripts(ensDb)
+transGR$gene_name <- mcols(genesGR)[mcols(transGR)$gene_id,"gene_name"]
+transGR$length <- lengthOf(ensDb, "tx")
+```
+
+
+# GOseq analysis
+For this analysis, we are taking each subset of genes in the venn diagram (figure 2) and looking to see if we can find any GO enrichment for each section. We'll first perform enrichment for each analysis as a whole, and then hone in on the specific overlaps. 
+
+The `goSummaries` loaded in here contain information on each GO term and their shortest and longest paths
+```{r goSummaries}
+goSummaries <- url(
+  "https://uofabioinformaticshub.github.io/summaries2GO/data/goSummaries.RDS"
+  ) %>%
+  readRDS()
+```
+
+Define gene backgrounds
+```{r backgrounds}
+DEG_universe <- oxygenGenes %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+
+DET_universe <- oxygenTranscripts %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+
+DTU_universe <- oxygenDTU %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+```
+
+# Whole analysis enrichment
+
+```{r getGeneLists}
+DEG <- oxygenGenes %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DEG <- DEG$DE %>% set_names(DEG$Gene)
+
+DET <- oxygenTranscripts %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DET <- DET %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  left_join(DET %>%
+              dplyr::filter(DE == TRUE),
+            by = "Gene") %>%
+  mutate(DE = is.na(DE) == FALSE)
+
+DET <- DET$DE %>% set_names(DET$Gene)
+
+DTU <- oxygenDTU %>%
+  dplyr::select(Gene, DTU) %>%
+  distinct()
+
+DTU <- DTU$DTU %>% set_names(DTU$Gene)
+```
+
+Now perform goseq analysis on all 1665 genes in the set
+```{r create_gene_vector}
+# Get gene info
+DEG <- oxygenGenes %>%
+  dplyr::select(Gene,
+                logFC,
+                FDR) %>%
+  distinct() %>%
+  dplyr::mutate(DE = ifelse(
+    FDR < 0.05 & abs(logFC) > 1, TRUE, FALSE
+    )
+  ) %>%
+  dplyr::select(Gene, DE)
+
+DEG_DE <- DEG %>%
+  dplyr::filter(DE == TRUE)
+
+# Get transcript info, need intermediate object to use in creation of DE list
+DET <- oxygenTranscripts %>%
+  dplyr::select(Gene,
+                logFC,
+                FDR) %>%
+  dplyr::mutate(DE = ifelse(
+    FDR < 0.05 & abs(logFC) > 1, TRUE, FALSE
+    )
+  ) %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DET <- DET %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  left_join(
+    DET %>%
+      dplyr::filter(
+        DE == TRUE
+      ),
+    by = "Gene"
+  ) %>%
+  mutate(DE = is.na(DE) == FALSE)
+
+DET_DE <- DET %>%
+  dplyr::filter(DE == TRUE)
+
+# Get DTU info
+DTU <- oxygenDTU %>%
+  dplyr::select(Gene, DTU) %>%
+  distinct()
+
+DTU_DE <- DTU %>%
+  dplyr::filter(DTU == TRUE) %>%
+  dplyr::rename("DE" = "DTU")
+
+nonDE_genes <- rbind(DEG,
+                     DET,
+                     DTU %>% 
+                       dplyr::rename("DE" = "DTU")) %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  mutate(DE = FALSE)
+
+# Now smack it altogether
+DE_genes <- rbind(DEG_DE,
+                  DET_DE,
+                  DTU_DE) %>%
+  distinct()
+
+nonDE_genes <- nonDE_genes %>% 
+  dplyr::filter(!Gene %in% DE_genes$Gene)
+
+allGenes_GOseq <- rbind(DE_genes, nonDE_genes)
+
+allGO <- allGenes_GOseq$DE %>%
+  set_names(allGenes_GOseq$Gene)
+
+#joined <- full_join(DEG, DET, by = "Gene")
+```
+
+Define length bias data
+```{r lengthBias}
+ave.len <- transGR$length %>% 
+  set_names(transGR$tx_id)
+
+med.len <- tapply(ave.len, transGR$gene_id, mean)
+
+length_bias <- med.len[match(transGR$gene_id, names(med.len))]
+```
+
+```{r all_GO}
+all_bias <- length_bias[names(allGO)]
+
+pwf <- nullp(allGO,
+             id = "ensGene",
+             bias.data = all_bias,
+             plot.fit = FALSE)
+
+GO.wall <- goseq(pwf, "hg19", "ensGene")
+
+GO.wall <- GO.wall %>%
+  mutate(p_adj = p.adjust(over_represented_pvalue, method = "BH"))
+
+all_GO <- GO.wall %>% 
+  left_join(goSummaries,
+            by = c("category" = "id")) %>%
+  dplyr::filter(shortest_path > 2 & p_adj < 0.05 & numDEInCat > 10) %>%
+  dplyr::select("Category" = "category",
+                "Term" = "term",
+                "Ontology" = "ontology.x",
+                "DE in cat." = "numDEInCat",
+                "Total in cat." = "numInCat",
+                "Shortest path" = "shortest_path",
+                "FDR" = "p_adj")
+
+all_GO <- all_GO %>%
+  mutate("FDR" = formatC(FDR, digits = 2, format = "e"))
+
+all_GO %>% write_csv(
+  here("data/results/early_gestation_GO_table.csv")
+)
+
+res_table <- all_GO %>%
+  dplyr::select("Category",
+                "Term",
+                "Ontology",
+                "DEterm" = "DE in cat.",
+                "Total" = "Total in cat.",
+                "FDR") %>%
+  dplyr::mutate(DEterm = paste0(
+    DEterm, " (", round(divide_by(DEterm, Total)*100, 1), "%)"
+  )) %>%
+  head(20) %>%
+  dplyr::mutate(DEterm = str_replace(DEterm, "21%", "21.0%"),
+                DEterm = str_replace(DEterm, "20%", "20.0%"),
+                DEterm = str_replace(DEterm, "49%", "49.0%")) %>%
+  dplyr::rename("DE in term" = "DEterm") %>%
+  dplyr::select(-"Total") %>%
+  dplyr::mutate(
+    Term = str_replace(Term, " membrane", " MEMBRANE"),
+    Term = str_replace(Term, "migration", "MIGRATION"),
+    Term = str_replace(Term, "signaling", "SIGNALLING"),
+    Term = str_replace(Term, "cellular", "CELLULAR"),
+    Term = str_replace(Term, "binding", "BINDING"),
+    Term = str_replace(Term, "response", "RESPONSE"),
+    Term = str_replace(Term, "regulation", "REGULATION"),
+    Term = str_replace(Term, "receptor", "RECEPTOR")
+  )
+
+DT::datatable(res_table)
+```
+
+Save GO results
+```{r write_csv}
+res_table %>% write_csv(
+  here("data/results/manuscript_GO_table.csv")
+)
+```

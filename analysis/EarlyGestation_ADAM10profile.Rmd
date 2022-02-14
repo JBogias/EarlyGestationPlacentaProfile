@@ -1,0 +1,52 @@
+---
+title: "Gene Profile"
+author: "Justin Bogias"
+date: "`r format(Sys.Date(), '%d %b, %Y')`"
+output:
+  html_document: 
+    toc: yes
+    code_folding: hide
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warnings = FALSE)
+```
+
+# Load Packages
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(here)
+
+source(here("R/get_profile_plot.R"))
+```
+
+^Keep testing function to get all packages
+
+# Load data
+```{r}
+dgelist <- read_rds(here("data/counts/dgelist.rds"))
+dtelist <- read_rds(here("data/counts/dtelist.rds"))
+```
+
+# ADAM10
+```{r}
+txprofiler(dgelist = dgelist,
+           dtelist = dtelist,
+           target_gene = "ADAM10",
+           variable = "GestationalAge",
+           transcript_variable = "GestationalAge",
+           dtu_variable = "GestationGroup",
+           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
+           tpm_method = "tximport",
+           gene_x_label = "Gestational Age (weeks)",
+           transcript_x_label = "Gestational Age (weeks)",
+           dtu_x_label = "Gestation Group (weeks)")
+```
