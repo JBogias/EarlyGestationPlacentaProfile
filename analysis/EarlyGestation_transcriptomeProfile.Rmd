@@ -470,7 +470,7 @@ clusteredMatrix <- clusteredMatrix %>%
 
 ann_col <- pd %>%
   dplyr::filter(ID %in% colnames(clusteredMatrix)) %>%
-  dplyr::select(ID, "Gestation Group" = "Timepoint") %>%
+  dplyr::select(ID, "Gestation Group " = "Timepoint") %>%
   as.data.frame() %>%
   column_to_rownames("ID")
 
@@ -492,9 +492,10 @@ pheatmap(clusteredMatrix,
          show_colnames = FALSE,
          cluster_cols = FALSE,
          main = paste0(
-           "Top 15 transcripts with greatest expression",
+           "Top 15 transcripts with greatest\n expression",
            " differences to the gene level"
          ),
+         fontsize = 16,
          gaps_col = 27,
          cutree_rows = 4,
          clustering_method = "ward.D2",

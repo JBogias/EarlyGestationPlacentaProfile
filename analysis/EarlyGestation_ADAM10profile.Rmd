@@ -20,33 +20,171 @@ knitr::opts_chunk$set(
 
 # Load Packages
 ```{r message=FALSE, warning=FALSE}
-library(tidyverse)
-library(magrittr)
+library(edgeR)
 library(ggplot2)
+library(tidyverse)
+library(tximport)
+library(EnsDb.Hsapiens.v75)
+library(cowplot)
 library(here)
 
-source(here("R/get_profile_plot.R"))
+source(here("R/plot_expression.R"))
+source(here("R/plot_proportions.R"))
+source(here("R/plot_structures.R"))
 ```
-
-^Keep testing function to get all packages
 
 # Load data
 ```{r}
 dgelist <- read_rds(here("data/counts/dgelist.rds"))
 dtelist <- read_rds(here("data/counts/dtelist.rds"))
+
+dtelist$samples <- dtelist$samples %>%
+  mutate(
+    GestationGroup = ifelse(GestationalAge <= 10, "6-10", "11-23"),
+    GestationGroup = factor(GestationGroup, levels = c("6-10", "11-23"))
+  )
 ```
 
-# ADAM10
-```{r}
-txprofiler(dgelist = dgelist,
-           dtelist = dtelist,
-           target_gene = "ADAM10",
-           variable = "GestationalAge",
-           transcript_variable = "GestationalAge",
-           dtu_variable = "GestationGroup",
-           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
-           tpm_method = "tximport",
-           gene_x_label = "Gestational Age (weeks)",
-           transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)")
+```{r gene_expression}
+gene_plot <- plot_txp(
+  dgelist = dgelist,
+  target_gene = "ADAM10",
+  variable = "GestationalAge",
+  level = "gene",
+  path = NULL,
+  keep_legend = FALSE
+) +
+  labs(x = "Gestational Age (weeks)") +
+  ggtitle(NULL)
+```
+
+```{r transcript_expression}
+transcript_plot <- plot_txp(
+  dgelist = dtelist,
+  target_gene = "ADAM10",
+  variable = "GestationalAge",
+  level = "transcript",
+  tpm_method = "tximport",
+  path = here("data/counts/salmon_abundance.csv.gz"),
+  keep_legend = FALSE
+) +
+  labs(x = "Gestational Age (weeks)") +
+  ggtitle(NULL)
+```
+
+```{r transcript_proportions}
+anno <- data.frame(x1 = c(1, 0, 0, 1),
+                   x2 = c(2, 0, 0, 2), 
+                   y1 = c(0.78, 0, 0, 0.78),
+                   y2 = c(0.84, 0, 0, 0.84), 
+                   xstar = c(1.5, 0, 0, 1.5),
+                   ystar = c(0.86, 0, 0, 0.86),
+                   lab = c("*", "", "", "*"),
+                   transcript_name = c("ADAM10-001",
+                                       "ADAM10-002",
+                                       "ADAM10-008",
+                                       "ADAM10-015"))
+
+proportion_plot <- plot_proportions(
+  dtelist = dtelist,
+  target_gene = "ADAM10",
+  variable = "GestationGroup",
+  tpm_method = "tximport",
+  path = here("data/counts/salmon_abundance.csv.gz"),
+  keep_legend = FALSE
+) +
+  labs(x = "Gestation Group (weeks)") +
+  ggtitle(NULL) +
+  theme_bw()
+
+proportion_plot <- proportion_plot +
+  scale_y_continuous(limits = c(0, 0.9)) +
+  geom_text(data = anno,
+            aes(x = xstar,
+                y = ystar,
+                label = lab),
+            size = 7) +
+  geom_segment(data = anno,
+               aes(x = x1, 
+                   xend = x1,
+                   y = y1,
+                   yend = y2),
+               colour = "black") +
+  geom_segment(data = anno,
+               aes(x = x2,
+                   xend = x2,
+                   y = y1,
+                   yend = y2)) +
+  geom_segment(data = anno,
+               aes(x = x1,
+                   xend = x2, 
+                   y = y2,
+                   yend = y2),
+               colour = "black") +
+  theme(legend.position = "none",
+        strip.background = element_rect(
+          fill = "lightblue"
+        ))
+```
+
+```{r transcript_structures}
+structure_plot <- plot_structures(
+  dtelist = dtelist,
+  target_gene = "ADAM10",
+  annotation = EnsDb.Hsapiens.v75
+)
+```
+
+
+```{r prepare_cowplot}
+left_col <- cowplot::plot_grid(structure_plot,
+                               proportion_plot,
+                               labels = c("A", "C"),
+                               nrow = 2)
+
+right_col <- cowplot::plot_grid(gene_plot,
+                                transcript_plot,
+                                labels = c("B", "D"),
+                                nrow = 2)
+
+```
+
+```{r legend}
+legend_plot <- cowplot::get_legend(
+  plot_txp(
+    dgelist = dtelist,
+    target_gene = "ADAM10",
+    variable = "GestationalAge",
+    level = "transcript",
+    path = here("data/counts/salmon_abundance.csv.gz"),
+    keep_legend = TRUE
+  )
+)
+```
+
+```{r add legend}
+profile_plot <- cowplot::plot_grid(
+  left_col,
+  right_col,
+  legend_plot,
+  ncol = 3,
+  rel_widths = c(1, 1, 0.4)
+)
+```
+
+```{r title}
+title_theme <- cowplot::ggdraw() +
+  draw_label(
+    paste0("ADAM10", " profile"),
+    colour = "black",
+    fontface = "bold",
+    size = 25
+  )
+```
+
+```{r ADAM10_cowplot}
+cowplot::plot_grid(title_theme,
+                   profile_plot,
+                   nrow = 2,
+                   rel_heights = c(0.05, 1))
 ```

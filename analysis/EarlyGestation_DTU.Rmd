@@ -670,16 +670,18 @@ p <- global_prop_res_nonsig %>%
     axis.text.x = element_text(angle = 0,
                                hjust = 1,
                                colour = "black",
-                               size = 15),
-    strip.text.x = element_text(size = 15),
-    title = element_text(size = 15),
-    plot.title = element_text(size = 18,
+                               size = 18),
+    legend.title = element_text(size = 20,
+                                colour = "black"),
+    legend.text = element_text(size = 18,
+                               colour = "black"),
+    plot.title = element_text(size = 22,
                               colour = "black",
                               face = "bold"),
-    axis.title = element_text(size = 15,
+    axis.title = element_text(size = 20,
                               colour = "black"),
     axis.text.y = element_text(colour = "black",
-                               size = 15)
+                               size = 18)
   )
   
 highlight1 <- dplyr::filter(
@@ -723,8 +725,6 @@ p + geom_label_repel(data = highlight,
                          colour = Direction),
                      show.legend = FALSE) +
   scale_colour_manual(values = c("red", "blue"))
-
-p
 
 ```
 

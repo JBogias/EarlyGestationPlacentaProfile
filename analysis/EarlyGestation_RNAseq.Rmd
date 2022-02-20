@@ -628,11 +628,15 @@ DTElist$counts %>%
   ggtitle("Principal Component Analysis of Transcript Expression") +
   labs(colour = "Gestational Age\n(weeks)") + 
   theme_bw() +
-  theme(axis.title = element_text(size = 14, 
+  theme(axis.title = element_text(size = 20, 
                                   colour = "black"),
-        axis.text = element_text(size = 12,
+        legend.title = element_text(size = 20,
+                                    colour = "black"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"),
+        axis.text = element_text(size = 18,
                                  colour = "black"),
-        plot.title = element_text(size = 15,
+        plot.title = element_text(size = 22,
                                   colour = "black",
                                   face = "bold")
   )
