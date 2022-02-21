@@ -99,11 +99,11 @@ volcano <- oxygenTranscripts %>%
     "Differential Transcript Expression: 6-10 weeks' vs 11-23 weeks' gestation"
     ) +
   theme_bw() +
-  theme(axis.title = element_text(size = 12,
+  theme(axis.title = element_text(size = 20,
                                   colour = "black"),
-        axis.text = element_text(size = 10,
+        axis.text = element_text(size = 18,
                                  colour = "black"),
-        plot.title = element_text(size = 14,
+        plot.title = element_text(size = 22,
                                   colour = "black",
                                   face = "bold"))
 
@@ -122,13 +122,20 @@ volcano +
 flt_exp <- plot_txp(
   dgelist = dtelist,
   target_gene = "FLT1",
-  variable = "GestationGroup",
+  variable = "GestationalAge",
   level = "transcript",
   tpm_method = "standard",
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 flt_proportions <- plot_proportions(
   dtelist = dtelist,
@@ -138,38 +145,64 @@ flt_proportions <- plot_proportions(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestation Group (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.background = element_rect(fill = "lightblue"))
 
-flt_legend <- cowplot::get_legend(plot_proportions(
-  dtelist = dtelist,
-  target_gene = "FLT1",
-  variable = "GestationGroup",
-  tpm_method = "tximport",
-  path = here("data/counts/salmon_abundance.csv.gz"),
-  keep_legend = TRUE
-) +
-  xlab("Gestation Group (weeks)") +
-  labs(fill = "Transcript"))
+flt_legend <- cowplot::get_legend(
+  plot_proportions(
+    dtelist = dtelist,
+    target_gene = "FLT1",
+    variable = "GestationalAge",
+    tpm_method = "tximport",
+    path = here("data/counts/salmon_abundance.csv.gz"),
+    keep_legend = TRUE
+  ) +
+    xlab("Gestational Age (weeks)") +
+    labs(fill = "Transcript") +
+    theme(legend.title = element_text(size = 20,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 18,
+                                     colour = "black")))
 
-flt_cowplot <- cowplot::plot_grid(flt_exp,
-                                  flt_proportions,
+flt_plot <- cowplot::plot_grid(flt_exp,
+                               flt_proportions,
+                               rel_heights = c(1, 1),
+                               labels = c("A", "B", " "),
+                               nrow = 2)
+
+flt_cowplot <- cowplot::plot_grid(flt_plot,
                                   flt_legend,
-                                  rel_widths = c(1, 1, 0.4),
-                                  labels = c("A", "B", " "),
-                                  ncol = 3)
+                                  rel_widths = c(1, 0.3),
+                                  ncol = 2)
+
 ```
 
 ```{r PGF}
 pgf_exp <- plot_txp(
   dgelist = dtelist,
   target_gene = "PGF",
-  variable = "GestationGroup",
+  variable = "GestationalAge",
   level = "transcript",
   tpm_method = "standard",
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 pgf_proportions <- plot_proportions(
   dtelist = dtelist,
@@ -179,39 +212,70 @@ pgf_proportions <- plot_proportions(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestation Group (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        axis.text.x = element_text(angle = 45,
+                                   vjust = 0.6),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        legend.title = element_text(size = 20,
+                                    colour = "black",
+                                    face = "bold"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"),
+        strip.background = element_rect(fill = "lightblue"))
 
 pgf_legend <- cowplot::get_legend(
   plot_proportions(
     dtelist = dtelist,
     target_gene = "PGF",
-    variable = "GestationGroup",
+    variable = "GestationalAge",
     tpm_method = "tximport",
     path = here("data/counts/salmon_abundance.csv.gz"),
     keep_legend = TRUE
   ) +
-    xlab("Gestation Group (weeks)") +
-    labs(fill = "Transcript"))
+    xlab("Gestational Age (weeks)") +
+    labs(fill = "Transcript") +
+    theme(legend.title = element_text(size = 20,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 18,
+                                     colour = "black")))
 
-pgf_cowplot <- cowplot::plot_grid(pgf_exp,
-                                  pgf_proportions,
+pgf_plot <- cowplot::plot_grid(pgf_exp,
+                               pgf_proportions,
+                               rel_heights = c(1, 1),
+                               labels = c("C", "D", " "),
+                               nrow = 2)
+
+pgf_cowplot <- cowplot::plot_grid(pgf_plot,
                                   pgf_legend,
-                                  rel_widths = c(1, 1, 0.4),
-                                  labels = c("C", "D", " "),
-                                  ncol = 3)
+                                  rel_widths = c(1, 0.3),
+                                  ncol = 2)
 ```
 
 ```{r IGF2}
 igf_exp <- plot_txp(
   dgelist = dtelist,
   target_gene = "IGF2",
-  variable = "GestationGroup",
+  variable = "GestationalAge",
   level = "transcript",
   tpm_method = "standard",
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 igf_proportions <- plot_proportions(
   dtelist = dtelist,
@@ -221,26 +285,45 @@ igf_proportions <- plot_proportions(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestation Group (weeks)")
+  labs(x = "Gestation Group (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        axis.text.x = element_text(angle = 45,
+                                 vjust = 0.6),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.background = element_rect(fill = "lightblue"))
 
 igf_legend <- cowplot::get_legend(
   plot_proportions(
     dtelist = dtelist,
     target_gene = "IGF2",
-    variable = "GestationGroup",
+    variable = "GestationalAge",
     tpm_method = "tximport",
     path = here("data/counts/salmon_abundance.csv.gz"),
     keep_legend = TRUE
   ) +
-    xlab("Gestation Group (weeks)") +
-    labs(fill = "Transcript"))
+    xlab("Gestational Age (weeks)") +
+    labs(fill = "Transcript") +
+    theme(legend.title = element_text(size = 20,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 18,
+                                     colour = "black")))
 
-igf_cowplot <- cowplot::plot_grid(igf_exp,
-                                  igf_proportions,
+igf_plot <- cowplot::plot_grid(igf_exp,
+                               igf_proportions,
+                               rel_heights = c(1, 1),
+                               labels = c("E", "F", " "),
+                               nrow = 2)
+
+igf_cowplot <- cowplot::plot_grid(igf_plot,
                                   igf_legend,
-                                  rel_widths = c(1, 1, 0.4),
-                                  labels = c("E", "F", " "),
-                                  ncol = 3)
+                                  rel_widths = c(1, 0.3),
+                                  ncol = 2)
 ```
 
 ```{r figure_s2}
@@ -248,7 +331,7 @@ cowplot::plot_grid(
   flt_cowplot,
   pgf_cowplot,
   igf_cowplot,
-  nrow = 3
+  ncol = 3
 )
 ```
 
@@ -263,7 +346,21 @@ cd36_prop <- plot_proportions(
   keep_legend = TRUE
 ) +
   labs(x = "Gestation Group (weeks)",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.background = element_rect(fill = "lightblue"),
+        strip.text = element_text(size = 20, colour = "black"),
+        legend.title = element_text(size = 20,
+                                    colour = "black",
+                                    face = "bold"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"))
 ```
 
 ```{r NRP2}
@@ -276,7 +373,21 @@ nrp2_prop <- plot_proportions(
   keep_legend = TRUE
 ) +
   labs(x = "Gestation Group (weeks)",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.background = element_rect(fill = "lightblue"),
+        strip.text = element_text(size = 20, colour = "black"),
+        legend.title = element_text(size = 20,
+                                    colour = "black",
+                                    face = "bold"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"))
 ```
 
 ```{r figure_s3}
@@ -299,7 +410,19 @@ cd36_exp <- plot_txp(
 ) +
   labs(x = "Gestational Age (weeks)",
        fill = "Transcript",
-       colour = "Transcript")
+       colour = "Transcript") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        legend.title = element_text(size = 20,
+                                    colour = "black",
+                                    face = "bold"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"))
 ```
 
 ```{r NUCB2}
@@ -314,7 +437,19 @@ nucb2_exp <- plot_txp(
 ) +
   labs(x = "Gestational Age (weeks)",
        colour = "Transcript",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"),
+        legend.title = element_text(size = 20,
+                                    colour = "black",
+                                    face = "bold"),
+        legend.text = element_text(size = 18,
+                                   colour = "black"))
 ```
 
 ```{r figure_s4}
@@ -370,6 +505,7 @@ scaled_cpm <- dgelist %>%
   as.matrix()
 ```
 
+Added a space in `"Gestation Group "` to make sure the legend title and legend bar do not overlap
 ```{r figure_s5, message=FALSE, warning=FALSE}
 clusteredMatrix <- scaled_cpm[clusterOrder, ]
 clusteredMatrix <- clusteredMatrix[, (dgelist$samples %>% 
@@ -406,10 +542,10 @@ clusteredMatrix <- clusteredMatrix %>%
   as.matrix()
 
 ann_col <- dgelist$samples %>%
-  dplyr::select(ID, "Gestation Group" = Timepoint) %>%
+  dplyr::select(ID, "Gestation Group " = Timepoint) %>%
   as.data.frame() %>%
   set_rownames(dgelist$samples$ID) %>% 
-  dplyr::select("Gestation Group")
+  dplyr::select("Gestation Group ")
 
 dgelist$samples %>%
   dplyr::arrange(GestationalAge) %>%
@@ -431,6 +567,9 @@ pheatmap(clusteredMatrix,
          show_colnames = FALSE,
          cluster_cols = FALSE,
          cutree_rows = 4,
+         main = paste0("Genes with the greatest differences\n",
+                       "in expression to their transcripts"),
+         fontsize = 16,
          gaps_col = 27,
          annotation_col = ann_col)
 ```
@@ -446,7 +585,14 @@ fn1_gene <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 fn1_tx <- plot_txp(
   dgelist = dtelist,
@@ -457,7 +603,14 @@ fn1_tx <- plot_txp(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 fn1_legend <- cowplot::get_legend(
   plot_txp(
@@ -469,9 +622,17 @@ fn1_legend <- cowplot::get_legend(
     path = here("data/counts/salmon_abundance.csv.gz"),
     keep_legend = TRUE
   ) +
-    labs(x = "Gestational Age (weeks)")
+    labs(x = "Gestational Age (weeks)",
+         colour = "Transcript",
+         fill = "Transcript") +
+    theme(legend.title = element_text(size = 20,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 18,
+                                     colour = "black")
+    )
 )
-
+  
 top_row <- cowplot::plot_grid(fn1_gene,
                               fn1_tx,
                               fn1_legend,
@@ -490,7 +651,14 @@ psg9_gene <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
 
 psg9_tx <- plot_txp(
   dgelist = dtelist,
@@ -501,7 +669,15 @@ psg9_tx <- plot_txp(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 20,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 22,
+                                  colour = "black",
+                                  face = "bold"))
+
 
 psg9_legend <- cowplot::get_legend(
   plot_txp(
@@ -513,7 +689,14 @@ psg9_legend <- cowplot::get_legend(
     path = here("data/counts/salmon_abundance.csv.gz"),
     keep_legend = TRUE
   ) +
-    labs(x = "Gestational Age (weeks)")
+    labs(x = "Gestational Age (weeks)",
+         colour = "Transcript",
+         fill = "Transcript") +
+    theme(legend.title = element_text(size = 20,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 18,
+                                     colour = "black"))
 )
 
 bottom_row <- cowplot::plot_grid(psg9_gene,
@@ -531,6 +714,7 @@ cowplot::plot_grid(top_row,
 ```
 
 # Figure S7 - VMP1 profile
+use 1300x1000 for figures s7-s10
 ```{r VMP1}
 txprofiler(dgelist = dgelist,
            dtelist = dtelist,
@@ -542,7 +726,8 @@ txprofiler(dgelist = dgelist,
            tpm_method = "tximport",
            gene_x_label = "Gestational Age (weeks)",
            transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)")
+           dtu_x_label = "Gestation Group (weeks)",
+           plot_title_size = 30)
 ```
 
 # Figure S8 - ASAH1 profile
@@ -557,7 +742,8 @@ txprofiler(dgelist = dgelist,
            tpm_method = "tximport",
            gene_x_label = "Gestational Age (weeks)",
            transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)")
+           dtu_x_label = "Gestation Group (weeks)",
+           plot_title_size = 30)
 ```
 
 # Figure S9 - GPR126 profile
@@ -572,7 +758,13 @@ txprofiler(dgelist = dgelist,
            tpm_method = "tximport",
            gene_x_label = "Gestational Age (weeks)",
            transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)")
+           dtu_x_label = "Gestation Group (weeks)",
+           plot_title_size = 36,
+           axis_title_size = 24,
+           axis_text_size = 14,
+           legend_title_size = 24,
+           legend_text_size = 22,
+           strip_text_size = 10)
 ```
 
 # Figure S10 - TFPI2 profile
@@ -587,7 +779,8 @@ txprofiler(dgelist = dgelist,
            tpm_method = "tximport",
            gene_x_label = "Gestational Age (weeks)",
            transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)")
+           dtu_x_label = "Gestation Group (weeks)",
+           plot_title_size = 30)
 ```
 
 # Figure S11 - MTUS1, PTPRJ, RPS24, PSG6
@@ -601,7 +794,14 @@ mtus1_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"))
 
 mtus1_prop <- plot_proportions(
   dtelist = dtelist,
@@ -612,7 +812,17 @@ mtus1_prop <- plot_proportions(
   keep_legend = FALSE
 ) +
   labs(x = "Gestation Group (weeks)",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.text = element_text(size = 20,
+                                  colour = "black"),
+        strip.background = element_rect(fill = "lightblue"))
 
 mtus1_legend <- cowplot::get_legend(
   plot_txp(
@@ -626,16 +836,21 @@ mtus1_legend <- cowplot::get_legend(
   ) +
     labs(x = "Gestational Age (weeks)",
          fill = "Transcript",
-         colour = "Transcript")
-)
+         colour = "Transcript") +
+    theme(legend.title = element_text(size = 24,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 12,
+                                     colour = "black"))
+) 
 
-first_row <- cowplot::plot_grid(
+first_col <- cowplot::plot_grid(
   mtus1_exp,
   mtus1_prop,
   mtus1_legend,
   labels = c("A", "B", ""),
-  nrow = 1,
-  rel_widths = c(1, 1, 0.2)
+  ncol = 3,
+  rel_widths = c(1, 1, 0.3)
 )
 
 ptprj_exp <- plot_txp(
@@ -647,7 +862,14 @@ ptprj_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"))
 
 ptprj_prop <- plot_proportions(
   dtelist = dtelist,
@@ -658,7 +880,17 @@ ptprj_prop <- plot_proportions(
   keep_legend = FALSE
 ) +
   labs(x = "Gestation Group (weeks)",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.text = element_text(size = 20,
+                                  colour = "black"),
+        strip.background = element_rect(fill = "lightblue"))
 
 ptprj_legend <- cowplot::get_legend(
   plot_txp(
@@ -672,16 +904,22 @@ ptprj_legend <- cowplot::get_legend(
   ) +
     labs(x = "Gestational Age (weeks)",
          fill = "Transcript",
-         colour = "Transcript")
+         colour = "Transcript") +
+    theme(legend.title = element_text(size = 24,
+                                      colour = "black",
+                                      face = "bold"),
+          legend.text = element_text(size = 22,
+                                     colour = "black"))
+  
 )
 
-second_row <- cowplot::plot_grid(
+second_col <- cowplot::plot_grid(
   ptprj_exp,
   ptprj_prop,
   ptprj_legend,
   labels = c("C", "D", ""),
-  nrow = 1,
-  rel_widths = c(1, 1, 0.2)
+  ncol = 3,
+  rel_widths = c(1, 1, 0.3)
 )
 
 
@@ -694,7 +932,14 @@ rps24_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"))
 
 rps24_prop <- plot_proportions(
   dtelist = dtelist,
@@ -705,7 +950,17 @@ rps24_prop <- plot_proportions(
   keep_legend = FALSE
 ) +
   labs(x = "Gestation Group (weeks)",
-       fill = "Transcript")
+       fill = "Transcript") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.text = element_text(size = 20,
+                                  colour = "black"),
+        strip.background = element_rect(fill = "lightblue"))
 
 rps24_legend <- cowplot::get_legend(
   plot_txp(
@@ -719,16 +974,20 @@ rps24_legend <- cowplot::get_legend(
   ) +
     labs(x = "Gestational Age (weeks)",
          fill = "Transcript",
-         colour = "Transcript")
+         colour = "Transcript") +
+    theme(legend.title = element_text(size = 24,
+                                      colour = "black"),
+          legend.text = element_text(size = 22,
+                                     colour = "black"))
 )
 
-third_row <- cowplot::plot_grid(
+third_col <- cowplot::plot_grid(
   rps24_exp,
   rps24_prop,
   rps24_legend,
   labels = c("E", "F", ""),
-  nrow = 1,
-  rel_widths = c(1, 1, 0.2)
+  ncol = 3,
+  rel_widths = c(1, 1, 0.3)
 )
 
 
@@ -741,7 +1000,14 @@ psg6_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)")
+  labs(x = "Gestational Age (weeks)") +
+  theme(axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 22,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"))
 
 psg6_prop <- plot_proportions(
   dtelist = dtelist,
@@ -753,7 +1019,17 @@ psg6_prop <- plot_proportions(
 ) +
   labs(x = "Gestation Group (weeks)",
        fill = "Transcript") +
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.6))
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.6),
+        axis.title = element_text(size = 24,
+                                  colour = "black"),
+        axis.text = element_text(size = 18,
+                                 colour = "black"),
+        plot.title = element_text(size = 26,
+                                  colour = "black",
+                                  face = "bold"),
+        strip.text = element_text(size = 11,
+                                  colour = "black"),
+        strip.background = element_rect(fill = "lightblue"))
 
 psg6_legend <- cowplot::get_legend(
   plot_txp(
@@ -767,26 +1043,29 @@ psg6_legend <- cowplot::get_legend(
   ) +
     labs(x = "Gestational Age (weeks)",
          fill = "Transcript",
-         colour = "Transcript")
+         colour = "Transcript") +
+    theme(legend.title = element_text(size = 24,
+                                      colour = "black"),
+          legend.text = element_text(size = 22,
+                                     colour = "black"))
 )
 
-fourth_row <- cowplot::plot_grid(
+fourth_col <- cowplot::plot_grid(
   psg6_exp,
   psg6_prop,
   psg6_legend,
   labels = c("G", "H", ""),
-  nrow = 1,
-  rel_widths = c(1, 1, 0.2)
+  ncol = 3,
+  rel_widths = c(1, 1, 0.3)
 )
 
 cowplot::plot_grid(
-  first_row,
-  second_row,
-  third_row,
-  fourth_row,
+  first_col,
+  second_col,
+  third_col,
+  fourth_col,
   ncol = 1
 )
-
 ```
 
 
