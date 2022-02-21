@@ -301,14 +301,6 @@ plot_structures <- function(
       axis.title.y = element_blank(),
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
-      axis.text.x = element_text(
-        size = 15,
-        colour = "black"
-      ),
-      axis.title.x = element_text(
-        size = 15,
-        colour = "black"
-      ),
       legend.position="none",
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),

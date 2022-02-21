@@ -14,6 +14,8 @@ require(tximport)
 require(here)
 
 # Add functionality to work with summarized experiments
+# Need to adjust how the text size is edited, put all of the changeable
+# elements in each plot individually, instead of in the cowplot
 
 tpm <- function(dgelist) {
     rpk <- dgelist$counts/(dgelist$genes$length/1000)
@@ -185,20 +187,20 @@ plot_txp <- function(
                 ) +
                 theme_bw() +
                 theme(
-                    legend.title = element_blank(),
-                    legend.text = element_text(size = 15,
-                                               colour = "black"),
-                    legend.key.size = unit(2, "lines"),
-                    axis.title.x = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.x = element_text(size = 15,
-                                               colour = "black"),
-                    axis.title.y = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.y = element_text(size = 15,
-                                               colour = "black"),
-                    plot.title = element_text(size = 15,
-                                              face = "bold")
+                    legend.title = element_blank()#,
+                    # legend.text = element_text(size = 15,
+                    #                            colour = "black"),
+                    # legend.key.size = unit(2, "lines"),
+                    # axis.title.x = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.x = element_text(size = 15,
+                    #                            colour = "black"),
+                    # axis.title.y = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.y = element_text(size = 15,
+                    #                            colour = "black"),
+                    # plot.title = element_text(size = 15,
+                    #                           face = "bold")
                 ) +
                 if (isFALSE(keep_legend)) {
                     theme(legend.position = "none")
@@ -222,20 +224,20 @@ plot_txp <- function(
                            scales = "free") +
                 theme_bw() +
                 theme(
-                    legend.title = element_blank(),
-                    legend.text = element_text(size = 15,
-                                               colour = "black"),
-                    legend.key.size = unit(2, "lines"),
-                    axis.title.x = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.x = element_text(size = 15,
-                                               colour = "black"),
-                    axis.title.y = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.y = element_text(size = 15,
-                                               colour = "black"),
-                    plot.title = element_text(size = 15,
-                                              face = "bold")
+                    legend.title = element_blank()#,
+                    # legend.text = element_text(size = 15,
+                    #                            colour = "black"),
+                    # legend.key.size = unit(2, "lines"),
+                    # axis.title.x = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.x = element_text(size = 15,
+                    #                            colour = "black"),
+                    # axis.title.y = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.y = element_text(size = 15,
+                    #                            colour = "black"),
+                    # plot.title = element_text(size = 15,
+                    #                           face = "bold")
                 ) +
                 if (isFALSE(keep_legend)) {
                     theme(legend.position = "none")
@@ -266,20 +268,20 @@ plot_txp <- function(
                 ) +
                 theme_bw() +
                 theme(
-                    legend.title = element_blank(),
-                    legend.text = element_text(size = 15,
-                                               colour = "black"),
-                    legend.key.size = unit(2, "lines"),
-                    axis.title.x = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.x = element_text(size = 15,
-                                               colour = "black"),
-                    axis.title.y = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.y = element_text(size = 15,
-                                               colour = "black"),
-                    plot.title = element_text(size = 15,
-                                              face = "bold")
+                    legend.title = element_blank()#,
+                    # legend.text = element_text(size = 15,
+                    #                            colour = "black"),
+                    # legend.key.size = unit(2, "lines"),
+                    # axis.title.x = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.x = element_text(size = 15,
+                    #                            colour = "black"),
+                    # axis.title.y = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.y = element_text(size = 15,
+                    #                            colour = "black"),
+                    # plot.title = element_text(size = 15,
+                    #                           face = "bold")
                 ) +
                 if (isFALSE(keep_legend)) {
                     theme(legend.position = "none")
@@ -301,20 +303,20 @@ plot_txp <- function(
                 ) +
                 theme_bw() +
                 theme(
-                    legend.title = element_blank(),
-                    legend.text = element_text(size = 15,
-                                               colour = "black"),
-                    legend.key.size = unit(2, "lines"),
-                    axis.title.x = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.x = element_text(size = 15,
-                                               colour = "black"),
-                    axis.title.y = element_text(size = 15,
-                                                colour = "black"),
-                    axis.text.y = element_text(size = 15,
-                                               colour = "black"),
-                    plot.title = element_text(size = 15,
-                                              face = "bold")
+                    legend.title = element_blank()#,
+                    # legend.text = element_text(size = 15,
+                    #                            colour = "black"),
+                    # legend.key.size = unit(2, "lines"),
+                    # axis.title.x = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.x = element_text(size = 15,
+                    #                            colour = "black"),
+                    # axis.title.y = element_text(size = 15,
+                    #                             colour = "black"),
+                    # axis.text.y = element_text(size = 15,
+                    #                            colour = "black"),
+                    # plot.title = element_text(size = 15,
+                    #                           face = "bold")
                 ) +
                 if (isFALSE(keep_legend)) {
                     theme(legend.position = "none")

@@ -55,7 +55,9 @@ gene_plot <- plot_txp(
   keep_legend = FALSE
 ) +
   labs(x = "Gestational Age (weeks)") +
-  ggtitle(NULL)
+  ggtitle(NULL) +
+  theme(axis.title = element_text(size = 20, colour = "black"),
+        axis.text = element_text(size = 16, colour = "black"))
 ```
 
 ```{r transcript_expression}
@@ -69,7 +71,9 @@ transcript_plot <- plot_txp(
   keep_legend = FALSE
 ) +
   labs(x = "Gestational Age (weeks)") +
-  ggtitle(NULL)
+  ggtitle(NULL) +
+  theme(axis.title = element_text(size = 20, colour = "black"),
+        axis.text = element_text(size = 16, colour = "black"))
 ```
 
 ```{r transcript_proportions}
@@ -122,9 +126,10 @@ proportion_plot <- proportion_plot +
                    yend = y2),
                colour = "black") +
   theme(legend.position = "none",
-        strip.background = element_rect(
-          fill = "lightblue"
-        ))
+        strip.background = element_rect(fill = "lightblue"),
+        strip.text = element_text(colour = "black", size = 14),
+        axis.title = element_text(size = 20, colour = "black"),
+        axis.text = element_text(size = 14, colour = "black"))
 ```
 
 ```{r transcript_structures}
@@ -132,7 +137,10 @@ structure_plot <- plot_structures(
   dtelist = dtelist,
   target_gene = "ADAM10",
   annotation = EnsDb.Hsapiens.v75
-)
+) +
+  scale_x_continuous(limits = c(0, 8000)) +
+  theme(axis.title = element_text(size = 20, colour = "black"),
+        axis.text = element_text(size = 16, colour = "black"))
 ```
 
 
@@ -158,7 +166,14 @@ legend_plot <- cowplot::get_legend(
     level = "transcript",
     path = here("data/counts/salmon_abundance.csv.gz"),
     keep_legend = TRUE
-  )
+  ) +
+    labs(colour = "Transcript", fill = "Transcript") +
+    theme(legend.position = "right",
+          legend.title = element_text(colour = "black",
+                                      size = 20,
+                                      face = "bold"),
+          legend.text = element_text(colour = "black",
+                                     size = 18))
 )
 ```
 
@@ -167,8 +182,8 @@ profile_plot <- cowplot::plot_grid(
   left_col,
   right_col,
   legend_plot,
-  ncol = 3,
-  rel_widths = c(1, 1, 0.4)
+  ncol = 2,
+  rel_widths = c(1, 1, 0.2)
 )
 ```
 

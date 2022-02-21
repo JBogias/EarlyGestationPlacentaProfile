@@ -29,9 +29,15 @@ txprofiler <- function(dgelist,
                        tpm_method = "none",
                        gene_x_label = NULL,
                        transcript_x_label = NULL,
-                       dtu_x_label = NULL) {
+                       dtu_x_label = NULL,
+                       plot_title_size = 25,
+                       axis_title_size = 20,
+                       axis_text_size = 18,
+                       legend_title_size = 20,
+                       legend_text_size = 18,
+                       strip_text_size = 20) {
  
-   gene_plot <- plot_txp(
+  gene_plot <- plot_txp(
     dgelist = dgelist,
     target_gene = target_gene,
     variable = variable,
@@ -40,7 +46,12 @@ txprofiler <- function(dgelist,
     keep_legend = FALSE
   ) +
     labs(x = if_else(is.null(gene_x_label), variable, gene_x_label)) +
+    theme(axis.title = element_text(size = axis_title_size,
+                                    colour = "black"),
+          axis.text = element_text(size = axis_text_size,
+                                   colour = "black")) +
     ggtitle(NULL)
+     
   
   transcript_plot <- plot_txp(
     dgelist = dtelist,
@@ -55,8 +66,12 @@ txprofiler <- function(dgelist,
   ) +
     labs(x = if_else(
       is.null(transcript_x_label), variable, transcript_x_label)
-      ) +
-    ggtitle(NULL)
+    ) +
+    ggtitle(NULL) +
+    theme(axis.title = element_text(size = axis_title_size,
+                                    colour = "black"),
+          axis.text = element_text(size = axis_text_size,
+                                   colour = "black"))
   
   proportion_plot <- plot_proportions(
     dtelist = dtelist,
@@ -67,13 +82,25 @@ txprofiler <- function(dgelist,
     keep_legend = FALSE
   ) +
     labs(x = if_else(is.null(dtu_x_label), variable, dtu_x_label)) +
-    ggtitle(NULL)
+    ggtitle(NULL) +
+    theme(axis.title = element_text(size = axis_title_size,
+                                    colour = "black"),
+          axis.text = element_text(size = axis_text_size,
+                                   colour = "black"),
+          strip.text.x = element_text(size = strip_text_size,
+                                      colour = "black"),
+          strip.background = element_rect(fill = "lightblue"))
+
   
   structure_plot <- plot_structures(
     dtelist = dtelist,
     target_gene = target_gene,
     annotation = EnsDb.Hsapiens.v75
-  )
+  ) +
+    theme(axis.title = element_text(size = axis_title_size,
+                                    colour = "black"),
+          axis.text = element_text(size = axis_text_size,
+                                   colour = "black"))
   
   left_col <- cowplot::plot_grid(structure_plot,
                                  proportion_plot,
@@ -95,7 +122,13 @@ txprofiler <- function(dgelist,
       level = "transcript",
       path = abundance_path,
       keep_legend = TRUE
-    )
+    ) +
+      labs(fill = "Transcript", colour = "Transcript") +
+      theme(legend.title = element_text(size = legend_title_size,
+                                        colour = "black",
+                                        face = "bold"),
+            legend.text = element_text(size = legend_text_size,
+                                       colour = "black"))
   )
   
   profile_plot <- cowplot::plot_grid(
@@ -111,7 +144,7 @@ txprofiler <- function(dgelist,
       paste0(target_gene, " profile"),
       colour = "black",
       fontface = "bold",
-      size = 30
+      size = plot_title_size
     )
   
   cowplot::plot_grid(title_theme,

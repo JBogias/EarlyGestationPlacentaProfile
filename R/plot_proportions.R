@@ -157,29 +157,29 @@ plot_proportions <- function (
             theme(
                 # axis.text.x = element_blank(),
                 # axis.ticks.x = element_blank(),
-                legend.title = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                legend.text = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                axis.title = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                axis.text = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                strip.text.x = element_text(
-                    size = 15
-                ),
-                plot.title = element_text(
-                    size = 15,
-                    face = "bold"
-                ),
+                # legend.title = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # legend.text = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # axis.title = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # axis.text = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # strip.text.x = element_text(
+                #     size = 15
+                # ),
+                # plot.title = element_text(
+                #     size = 15,
+                #     face = "bold"
+                # ),
                 panel.background = element_rect(
                     fill = "white",
                     colour = NA
@@ -274,37 +274,37 @@ plot_proportions <- function (
             theme_bw() +
             theme(
                 axis.ticks.x = element_blank(),
-                legend.title = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                legend.text = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                axis.title.x = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                axis.text.x = element_text(
-                    size = 14,
-                    colour = "black"
-                ),
-                axis.text.y = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                axis.title.y = element_text(
-                    size = 15,
-                    colour = "black"
-                ),
-                strip.text.x = element_text(
-                    size = 10
-                ),
-                plot.title = element_text(
-                    size = 15,
-                    face = "bold"
-                ),
+                # legend.title = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # legend.text = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # axis.title.x = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # axis.text.x = element_text(
+                #     size = 14,
+                #     colour = "black"
+                # ),
+                # axis.text.y = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # axis.title.y = element_text(
+                #     size = 15,
+                #     colour = "black"
+                # ),
+                # strip.text.x = element_text(
+                #     size = 10
+                # ),
+                # plot.title = element_text(
+                #     size = 15,
+                #     face = "bold"
+                # ),
                 panel.background = element_rect(
                     fill = "white",
                     colour = NA
