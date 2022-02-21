@@ -182,8 +182,8 @@ profile_plot <- cowplot::plot_grid(
   left_col,
   right_col,
   legend_plot,
-  ncol = 2,
-  rel_widths = c(1, 1, 0.2)
+  ncol = 3,
+  rel_widths = c(1, 1, 0.3)
 )
 ```
 
@@ -193,7 +193,7 @@ title_theme <- cowplot::ggdraw() +
     paste0("ADAM10", " profile"),
     colour = "black",
     fontface = "bold",
-    size = 25
+    size = 35
   )
 ```
 
