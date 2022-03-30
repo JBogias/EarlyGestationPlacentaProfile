@@ -180,7 +180,7 @@ plot_txp <- function(
                 scale_fill_viridis_d() +
                 expand_limits(y = 0) +
                 xlab(variable) +
-                ylab("Transcript Expression (TPM)") +
+                ylab("Transcript Expression (log2 TPM)") +
                 ggtitle(
                     paste0(target_gene,
                            " transcript expression")
@@ -216,7 +216,7 @@ plot_txp <- function(
                 scale_fill_viridis_d() +
                 expand_limits(y = 0) +
                 xlab(variable) +
-                ylab("Transcript Expression (TPM)") +
+                ylab("Transcript Expression (log2 TPM)") +
                 ggtitle(
                     paste0(target_gene, " transcript expression")
                 ) +
