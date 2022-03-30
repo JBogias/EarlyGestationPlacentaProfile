@@ -257,6 +257,12 @@ The objects created in the previous code chunck are used here to plot the triple
 ```{r draw_venn}
 # Lets draw a triple venn now
 # cat.cex changed from 5 to 3.5
+png(filename = here("data/figures/Figure_2.png"),
+    width = 27.5,
+    height = 21.725,
+    units = "cm",
+    res = 300)
+
 grid.newpage()
 
 v <- draw.triple.venn(
@@ -293,13 +299,7 @@ grid.arrange(
                  vjust = 1.5)
 )
 
-png(
-  height = 700, 
-  width = 1000,
-  units = "px",
-  filename = here("figures/figure_2.png")
-)
-
+dev.off()
 ```
 
 # Figure 3 - Greatest Differences
@@ -485,6 +485,15 @@ gene_row_order <- transcript_names %>%
   column_to_rownames("TranscriptName")
 
 gene_row_order[clusterOrder, ]
+```
+
+Save figure 3
+```{r}
+png(filename = here("data/figures/Figure_3.png"),
+    width = 27.5,
+    height = 21.725,
+    units = "cm",
+    res = 300)
 
 pheatmap(clusteredMatrix,
          color = plasma(84),
@@ -500,6 +509,8 @@ pheatmap(clusteredMatrix,
          cutree_rows = 4,
          clustering_method = "ward.D2",
          annotation_col = ann_col)
+
+dev.off()
 ```
 
 # Transcriptome profile

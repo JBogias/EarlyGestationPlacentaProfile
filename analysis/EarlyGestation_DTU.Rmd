@@ -661,7 +661,7 @@ p <- global_prop_res_nonsig %>%
   ) +
   labs(x = "Average gene expression (log2 CPM)",
        y = "Difference in median proportions",
-       title = "Difference in transcript proportions against transcript expression") +
+       title = "Difference in transcript proportions against gene expression") +
   theme(
     legend.position = "none",
     panel.background = element_rect(fill = "white",
@@ -718,13 +718,22 @@ highlight %<>% dplyr::filter(
   !transcript_name == "GPR126-005"
 )
 
-p + geom_label_repel(data = highlight,
-                     aes(x = meanExpr,
-                         y = deltaProp,
-                         label = transcript_name,
-                         colour = Direction),
-                     show.legend = FALSE) +
+fig4 <- p + geom_label_repel(data = highlight,
+                             aes(x = meanExpr,
+                                 y = deltaProp,
+                                 label = transcript_name,
+                                 colour = Direction),
+                             show.legend = FALSE) +
   scale_colour_manual(values = c("red", "blue"))
+
+ggsave(filename = "Figure_4.png",
+       plot = fig4,
+       device = "png",
+       path = here("data/figures"),
+       height = 21.725,
+       width = 27.5,
+       units = "cm",
+       dpi = 300)
 
 ```
 

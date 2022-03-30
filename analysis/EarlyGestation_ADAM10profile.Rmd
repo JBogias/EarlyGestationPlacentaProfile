@@ -198,8 +198,18 @@ title_theme <- cowplot::ggdraw() +
 ```
 
 ```{r ADAM10_cowplot}
-cowplot::plot_grid(title_theme,
-                   profile_plot,
-                   nrow = 2,
-                   rel_heights = c(0.05, 1))
+adam10 <- cowplot::plot_grid(title_theme,
+                             profile_plot,
+                             nrow = 2,
+                             rel_heights = c(0.05, 1))
+
+ggsave(filename = "Figure_5.png",
+       plot = adam10,
+       device = "png",
+       path = here("data/figures"),
+       width = 37.5,
+       height = 29.625,
+       units = "cm",
+       dpi = 300)
+
 ```

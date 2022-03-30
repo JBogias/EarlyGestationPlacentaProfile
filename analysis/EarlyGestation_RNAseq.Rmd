@@ -615,7 +615,7 @@ qsmooth::qsmoothData(qs) %>%
 ## Figure 1 - PCA
 The samples are spread on the first principle component by gestational age
 ```{r PCA_dte}
-DTElist$counts %>%
+fig1 <- DTElist$counts %>%
   cpm(log = TRUE) %>%
   t() %>%
   prcomp() %>%
@@ -636,10 +636,19 @@ DTElist$counts %>%
                                    colour = "black"),
         axis.text = element_text(size = 18,
                                  colour = "black"),
-        plot.title = element_text(size = 22,
+        plot.title = element_text(size = 20,
                                   colour = "black",
                                   face = "bold")
   )
+
+ggsave(filename = "Figure_1.png",
+       plot = fig1,
+       device = "png",
+       path = here("data/figures"),
+       height = 21.725,
+       width = 27.5,
+       units = "cm",
+       dpi = 300)
 ```
 
 

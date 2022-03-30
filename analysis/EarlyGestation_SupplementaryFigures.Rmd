@@ -107,7 +107,7 @@ volcano <- oxygenTranscripts %>%
                                   colour = "black",
                                   face = "bold"))
 
-volcano +
+volc_plot <- volcano +
   geom_label_repel(data = highlight,
                    aes(x = logFC,
                        y = -log10(FDR),
@@ -115,12 +115,20 @@ volcano +
                        colour = direction),
                    show.legend = FALSE) +
   scale_colour_manual(values = c("blue", "red"))
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure1.png",
+       plot = volc_plot,
+       width = 7000,
+       height = 6000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S2 - FLT, PGF, IGF2
 ```{r FLT1}
 flt_exp <- plot_txp(
-  dgelist = dtelist,
+  dgelist = flta,
   target_gene = "FLT1",
   variable = "GestationalAge",
   level = "transcript",
@@ -128,7 +136,8 @@ flt_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 20,
                                   colour = "black"),
         axis.text = element_text(size = 18,
@@ -176,11 +185,11 @@ flt_plot <- cowplot::plot_grid(flt_exp,
                                flt_proportions,
                                rel_heights = c(1, 1),
                                labels = c("A", "B", " "),
-                               nrow = 2)
+                               ncol = 2)
 
 flt_cowplot <- cowplot::plot_grid(flt_plot,
                                   flt_legend,
-                                  rel_widths = c(1, 0.3),
+                                  rel_widths = c(1, 0.2),
                                   ncol = 2)
 
 ```
@@ -195,7 +204,8 @@ pgf_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 20,
                                   colour = "black"),
         axis.text = element_text(size = 18,
@@ -250,11 +260,11 @@ pgf_plot <- cowplot::plot_grid(pgf_exp,
                                pgf_proportions,
                                rel_heights = c(1, 1),
                                labels = c("C", "D", " "),
-                               nrow = 2)
+                               ncol = 2)
 
 pgf_cowplot <- cowplot::plot_grid(pgf_plot,
                                   pgf_legend,
-                                  rel_widths = c(1, 0.3),
+                                  rel_widths = c(1, 0.2),
                                   ncol = 2)
 ```
 
@@ -268,7 +278,8 @@ igf_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 20,
                                   colour = "black"),
         axis.text = element_text(size = 18,
@@ -318,27 +329,40 @@ igf_plot <- cowplot::plot_grid(igf_exp,
                                igf_proportions,
                                rel_heights = c(1, 1),
                                labels = c("E", "F", " "),
-                               nrow = 2)
+                               ncol = 2)
 
 igf_cowplot <- cowplot::plot_grid(igf_plot,
                                   igf_legend,
-                                  rel_widths = c(1, 0.3),
+                                  rel_widths = c(1, 0.2),
                                   ncol = 2)
 ```
 
 ```{r figure_s2}
-cowplot::plot_grid(
+fig2_cowplot <- cowplot::plot_grid(
   flt_cowplot,
   pgf_cowplot,
   igf_cowplot,
-  ncol = 3
+  nrow = 3
 )
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure2.png",
+       plot = fig2_cowplot,
+       width = 6500,
+       height = 8000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S3 - Transcript proportions
 ```{r CD36_prop}
+fig3_cd36_dtelist <- dtelist
+fig3_cd36_dtelist$genes$transcript_name %<>%
+  str_replace(pattern = "CD36-016", 
+              replacement = "CD36-016*")
+
 cd36_prop <- plot_proportions(
-  dtelist = dtelist,
+  dtelist = fig3_cd36_dtelist,
   target_gene = "CD36",
   variable = "GestationGroup",
   tpm_method = "tximport",
@@ -364,8 +388,13 @@ cd36_prop <- plot_proportions(
 ```
 
 ```{r NRP2}
+fig3_nrp2_dtelist <- dtelist
+fig3_nrp2_dtelist$genes$transcript_name %<>%
+  str_replace(pattern = "NRP2-005", 
+              replacement = "NRP2-005*")
+
 nrp2_prop <- plot_proportions(
-  dtelist = dtelist,
+  dtelist = fig3_nrp2_dtelist,
   target_gene = "NRP2",
   variable = "GestationGroup",
   tpm_method = "tximport",
@@ -391,16 +420,33 @@ nrp2_prop <- plot_proportions(
 ```
 
 ```{r figure_s3}
-cowplot::plot_grid(cd36_prop,
-                   nrp2_prop,
-                   nrow = 2,
-                   labels = c("A", "B"))
+fig3_cowplot <- cowplot::plot_grid(cd36_prop,
+                                   nrp2_prop,
+                                   nrow = 2,
+                                   labels = c("A", "B"))
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure3.png",
+       plot = fig3_cowplot,
+       width = 6500,
+       height = 8000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S4 - Transcript Expression
 ```{r CD36_exp}
+cd36_dte <- dtelist
+cd36_dte$genes$transcript_name %<>% 
+  str_replace(pattern = "CD36-006", replacement = "CD36-006*") %>%
+  str_replace(pattern = "CD36-014", replacement = "CD36-014*") %>%
+  str_replace(pattern = "CD36-017", replacement = "CD36-017*") %>%
+  str_replace(pattern = "CD36-015", replacement = "CD36-015*") %>%
+  str_replace(pattern = "CD36-021", replacement = "CD36-021*") %>%
+  str_replace(pattern = "CD36-016", replacement = "CD36-016*")
+
 cd36_exp <- plot_txp(
-  dgelist = dtelist,
+  dgelist = cd36_dte,
   target_gene = "CD36",
   variable = "GestationalAge",
   level = "transcript",
@@ -409,6 +455,7 @@ cd36_exp <- plot_txp(
   keep_legend = TRUE
 ) +
   labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)",
        fill = "Transcript",
        colour = "Transcript") +
   theme(axis.title = element_text(size = 20,
@@ -426,8 +473,17 @@ cd36_exp <- plot_txp(
 ```
 
 ```{r NUCB2}
+nucb_dte <- dtelist
+nucb_dte$genes$transcript_name %<>% 
+  str_replace(pattern = "NUCB2-002", replacement = "NUCB2-002*") %>%
+  str_replace(pattern = "NUCB2-012", replacement = "NUCB2-012*") %>%
+  str_replace(pattern = "NUCB2-005", replacement = "NUCB2-005*") %>%
+  str_replace(pattern = "NUCB2-017", replacement = "NUCB2-017*") %>%
+  str_replace(pattern = "NUCB2-201", replacement = "NUCB2-201*") %>%
+  str_replace(pattern = "NUCB2-006", replacement = "NUCB2-006*")
+
 nucb2_exp <- plot_txp(
-  dgelist = dtelist,
+  dgelist = nucb_dte,
   target_gene = "NUCB2",
   variable = "GestationalAge",
   level = "transcript",
@@ -436,6 +492,7 @@ nucb2_exp <- plot_txp(
   keep_legend = TRUE
 ) +
   labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)",
        colour = "Transcript",
        fill = "Transcript") +
   theme(axis.title = element_text(size = 20,
@@ -453,10 +510,18 @@ nucb2_exp <- plot_txp(
 ```
 
 ```{r figure_s4}
-cowplot::plot_grid(cd36_exp,
-                   nucb2_exp,
-                   nrow = 2,
-                   labels = c("A", "B"))
+fig4_cowplot <- cowplot::plot_grid(cd36_exp,
+                                   nucb2_exp,
+                                   nrow = 2,
+                                   labels = c("A", "B"))
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure4.png",
+       plot = fig4_cowplot,
+       width = 6500,
+       height = 8000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S5 - Gene Heatmap
@@ -603,7 +668,8 @@ fn1_tx <- plot_txp(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 20,
                                   colour = "black"),
         axis.text = element_text(size = 18,
@@ -669,7 +735,8 @@ psg9_tx <- plot_txp(
   path = here("data/counts/salmon_abundance.csv.gz"),
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 20,
                                   colour = "black"),
         axis.text = element_text(size = 18,
@@ -708,79 +775,127 @@ bottom_row <- cowplot::plot_grid(psg9_gene,
 ```
 
 ```{r figure_s6}
-cowplot::plot_grid(top_row,
-                   bottom_row,
-                   ncol = 1)
+fig6_cowplot <- cowplot::plot_grid(top_row,
+                                   bottom_row,
+                                   ncol = 1)
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure6.png",
+       plot = fig6_cowplot,
+       width = 7000,
+       height = 6500,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S7 - VMP1 profile
 use 1300x1000 for figures s7-s10
 ```{r VMP1}
-txprofiler(dgelist = dgelist,
-           dtelist = dtelist,
-           target_gene = "VMP1",
-           variable = "GestationalAge",
-           transcript_variable = "GestationalAge",
-           dtu_variable = "GestationGroup",
-           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
-           tpm_method = "tximport",
-           gene_x_label = "Gestational Age (weeks)",
-           transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)",
-           plot_title_size = 30)
+vmp1 <- txprofiler(
+  dgelist = dgelist,
+  dtelist = dtelist,
+  target_gene = "VMP1",
+  variable = "GestationalAge",
+  transcript_variable = "GestationalAge",
+  dtu_variable = "GestationGroup",
+  abundance_path = here("data/counts/salmon_abundance.csv.gz"),
+  tpm_method = "tximport",
+  gene_x_label = "Gestational Age (weeks)",
+  transcript_x_label = "Gestational Age (weeks)",
+  dtu_x_label = "Gestation Group (weeks)",
+  plot_title_size = 30
+)
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure7.png",
+       plot = vmp1,
+       width = 7000,
+       height = 6000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S8 - ASAH1 profile
 ```{r ASAH1}
-txprofiler(dgelist = dgelist,
-           dtelist = dtelist,
-           target_gene = "ASAH1",
-           variable = "GestationalAge",
-           transcript_variable = "GestationalAge",
-           dtu_variable = "GestationGroup",
-           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
-           tpm_method = "tximport",
-           gene_x_label = "Gestational Age (weeks)",
-           transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)",
-           plot_title_size = 30)
+asah1 <- txprofiler(
+  dgelist = dgelist,
+  dtelist = dtelist,
+  target_gene = "ASAH1",
+  variable = "GestationalAge",
+  transcript_variable = "GestationalAge",
+  dtu_variable = "GestationGroup",
+  abundance_path = here("data/counts/salmon_abundance.csv.gz"),
+  tpm_method = "tximport",
+  gene_x_label = "Gestational Age (weeks)",
+  transcript_x_label = "Gestational Age (weeks)",
+  dtu_x_label = "Gestation Group (weeks)",
+  plot_title_size = 30
+)
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure8.png",
+       plot = asah1,
+       width = 7000,
+       height = 6000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S9 - GPR126 profile
 ```{r GPR126}
-txprofiler(dgelist = dgelist,
-           dtelist = dtelist,
-           target_gene = "GPR126",
-           variable = "GestationalAge",
-           transcript_variable = "GestationalAge",
-           dtu_variable = "GestationGroup",
-           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
-           tpm_method = "tximport",
-           gene_x_label = "Gestational Age (weeks)",
-           transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)",
-           plot_title_size = 36,
-           axis_title_size = 24,
-           axis_text_size = 14,
-           legend_title_size = 24,
-           legend_text_size = 22,
-           strip_text_size = 10)
+gpr126 <- txprofiler(
+  dgelist = dgelist,
+  dtelist = dtelist,
+  target_gene = "GPR126",
+  variable = "GestationalAge",
+  transcript_variable = "GestationalAge",
+  dtu_variable = "GestationGroup",
+  abundance_path = here("data/counts/salmon_abundance.csv.gz"),
+  tpm_method = "tximport",
+  gene_x_label = "Gestational Age (weeks)",
+  transcript_x_label = "Gestational Age (weeks)",
+  dtu_x_label = "Gestation Group (weeks)",
+  plot_title_size = 36,
+  axis_title_size = 24,
+  axis_text_size = 14,
+  legend_title_size = 24,
+  legend_text_size = 22,
+  strip_text_size = 10
+)
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure9.png",
+       plot = gpr126,
+       width = 7500,
+       height = 6500,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S10 - TFPI2 profile
 ```{r TFPI2}
-txprofiler(dgelist = dgelist,
-           dtelist = dtelist,
-           target_gene = "TFPI2",
-           variable = "GestationalAge",
-           transcript_variable = "GestationalAge",
-           dtu_variable = "GestationGroup",
-           abundance_path = here("data/counts/salmon_abundance.csv.gz"),
-           tpm_method = "tximport",
-           gene_x_label = "Gestational Age (weeks)",
-           transcript_x_label = "Gestational Age (weeks)",
-           dtu_x_label = "Gestation Group (weeks)",
-           plot_title_size = 30)
+tfpi2 <- txprofiler(
+  dgelist = dgelist,
+  dtelist = dtelist,
+  target_gene = "TFPI2",
+  variable = "GestationalAge",
+  transcript_variable = "GestationalAge",
+  dtu_variable = "GestationGroup",
+  abundance_path = here("data/counts/salmon_abundance.csv.gz"),
+  tpm_method = "tximport",
+  gene_x_label = "Gestational Age (weeks)",
+  transcript_x_label = "Gestational Age (weeks)",
+  dtu_x_label = "Gestation Group (weeks)",
+  plot_title_size = 30
+)
+
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure10.png",
+       plot = tfpi2,
+       width = 7000,
+       height = 6000,
+       units = "px",
+       dpi = 500)
 ```
 
 # Figure S11 - MTUS1, PTPRJ, RPS24, PSG6
@@ -794,7 +909,8 @@ mtus1_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 24,
                                   colour = "black"),
         axis.text = element_text(size = 22,
@@ -840,7 +956,7 @@ mtus1_legend <- cowplot::get_legend(
     theme(legend.title = element_text(size = 24,
                                       colour = "black",
                                       face = "bold"),
-          legend.text = element_text(size = 12,
+          legend.text = element_text(size = 22,
                                      colour = "black"))
 ) 
 
@@ -862,7 +978,8 @@ ptprj_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 24,
                                   colour = "black"),
         axis.text = element_text(size = 22,
@@ -932,7 +1049,8 @@ rps24_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 24,
                                   colour = "black"),
         axis.text = element_text(size = 22,
@@ -1000,7 +1118,8 @@ psg6_exp <- plot_txp(
   path = NULL,
   keep_legend = FALSE
 ) +
-  labs(x = "Gestational Age (weeks)") +
+  labs(x = "Gestational Age (weeks)",
+       y = "Transcript Expression (log2 TPM)") +
   theme(axis.title = element_text(size = 24,
                                   colour = "black"),
         axis.text = element_text(size = 22,
@@ -1059,13 +1178,23 @@ fourth_col <- cowplot::plot_grid(
   rel_widths = c(1, 1, 0.3)
 )
 
-cowplot::plot_grid(
+fig11_cowplot <- cowplot::plot_grid(
   first_col,
   second_col,
   third_col,
   fourth_col,
   ncol = 1
 )
+```
+
+```{r}
+ggsave(path = here("data/figures/"),
+       filename = "supp_figure11.png",
+       plot = fig11_cowplot,
+       width = 10000,
+       height = 15000,
+       units = "px",
+       dpi = 500)
 ```
 
 
