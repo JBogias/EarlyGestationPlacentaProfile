@@ -23,6 +23,7 @@ knitr::opts_chunk$set(
 library(edgeR)
 library(ggplot2)
 library(tidyverse)
+library(magrittr)
 library(tximport)
 library(EnsDb.Hsapiens.v75)
 library(cowplot)
@@ -40,8 +41,13 @@ dtelist <- read_rds(here("data/counts/dtelist.rds"))
 
 dtelist$samples <- dtelist$samples %>%
   mutate(
-    GestationGroup = ifelse(GestationalAge <= 10, "6-10", "11-23"),
-    GestationGroup = factor(GestationGroup, levels = c("6-10", "11-23"))
+    GestationGroup = ifelse(GestationalAge <= 10,
+                            paste0("6", "\U2012", "10"),
+                            paste0("11", "\U2012", "23")
+                            ),
+    GestationGroup = factor(GestationGroup, levels = c(
+      paste0("6", "\U2012", "10"), paste0("11", "\U2012", "23"))
+      )
   )
 ```
 
@@ -207,9 +213,13 @@ ggsave(filename = "Figure_5.png",
        plot = adam10,
        device = "png",
        path = here("data/figures"),
+#       width = 41.25,
+#       height = 32.5875,
        width = 37.5,
        height = 29.625,
        units = "cm",
        dpi = 300)
+
+#10.96 13.88
 
 ```

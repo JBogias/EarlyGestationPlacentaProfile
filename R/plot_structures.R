@@ -12,6 +12,8 @@
 #' @param transcript_label Should transcripts be labelled?
 #' @param region_coords
 
+require(magrittr)
+
 plot_structures <- function(
   dtelist,
   target_gene,

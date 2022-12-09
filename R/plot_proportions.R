@@ -8,6 +8,7 @@
 
 
 require(ggplot2)
+require(magrittr)
 require(tidyverse)
 require(tximport)
 require(here)

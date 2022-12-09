@@ -49,12 +49,12 @@ top_expressed <- oxygenTranscripts %>%
                 "Transcript Length" = "length",
                 "logCPM") 
 
-top_expressed$logCPM <- format(round(top_expressed$logCPM, 1), nsmall = 1)
+top_expressed$logCPM <- format(round(top_expressed$logCPM, 2), nsmall = 2)
 
 top_expressed %>%
   datatable()
 
-write_csv(top_expressed, here("data/results/top_expressed_transcripts.csv"))
+writexl::write_xlsx(top_expressed, here("data/tables/supp_table1.xlsx"))
 ```
 
 # Supp table 2 - triple overlap genes
@@ -64,7 +64,9 @@ sig_genes <- oxygenGenes %>%
   dplyr::select("Gene",
                 "GeneName",
                 "DGE logFC" = "logFC",
-                "DGE FDR" = "FDR")
+                "DGE FDR" = "FDR") %>%
+  mutate("DGE FDR" = formatC(`DGE FDR`, digits = 2, format = "e"),
+         "DGE logFC" = format(round(`DGE logFC`, 2), nsmall = 2))
 
 sig_tx <- oxygenTranscripts %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1) %>%
@@ -72,32 +74,42 @@ sig_tx <- oxygenTranscripts %>%
                 "Transcript",
                 "TranscriptName",
                 "DTE logFC" = "logFC",
-                "DTE FDR" = "FDR")
+                "DTE FDR" = "FDR") %>%
+  mutate("DTE FDR" = formatC(`DTE FDR`, digits = 2, format = "e"),
+         "DTE logFC" = format(round(`DTE logFC`, 2), nsmall = 2))
 
 sig_dtu <- oxygenDTU %>%
   dplyr::filter(geneFDR < 0.05) %>%
   dplyr::select("Gene",
                 "gene_name",
-                "DTU FDR" = "geneFDR")
+                "DTU FDR" = "geneFDR") %>%
+  mutate("DTU FDR" = formatC(`DTU FDR`, digits = 2, format = "e"))
 
 triple_overlap <- sig_tx %>%
   inner_join(sig_genes,
             by = "Gene") %>%
   inner_join(sig_dtu,
-            by = "Gene")
-
-sig_tx %>%
-  inner_join(sig_genes,
-            by = "Gene") %>%
-  inner_join(sig_dtu,
             by = "Gene") %>%
   distinct() %>%
-  datatable()
+  dplyr::select("Gene ID" = "Gene",
+                "Gene Name" = "gene_name",
+                "DGE logFC",
+                "DGE FDR",
+                "Transcript ID" = "Transcript",
+                "Transcript Name" = "TranscriptName",
+                "DTE logFC",
+                "DTE FDR",
+                "DTU FDR") %>%
+  dplyr::arrange(`DGE FDR`)
+
+writexl::write_xlsx(triple_overlap, here("data/tables/supp_table2.xlsx"))
+
+triple_overlap %>% datatable()
 ```
 
 # Supp table 3 - DTE results
 ```{r de_tx}
-oxygenTranscripts %>%
+dte <- oxygenTranscripts %>%
   dplyr::select("Transcript ID" = "Transcript",
                 "Transcript Name" = "TranscriptName",
                 "Gene ID" = "Gene",
@@ -106,24 +118,17 @@ oxygenTranscripts %>%
                 "logFC",
                 "FDR") %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1) %>%
-  datatable()
-```
+  mutate("FDR" = formatC(FDR, digits = 2, format = "e"),
+         "logFC" = format(round(logFC, 2), nsmall = 2),
+         "logCPM" = format(round(logCPM, 2), nsmall = 2))
 
-```{r up_regulated}
-oxygenTranscripts %>%
-  dplyr::select("Transcript ID" = "Transcript",
-                "Transcript Name" = "TranscriptName",
-                "Gene ID" = "Gene",
-                "Gene Name" = "GeneName",
-                "logCPM",
-                "logFC",
-                "FDR") %>%
-  dplyr::filter(FDR < 0.05 & logFC >= 1) %>%
-  datatable()
+writexl::write_xlsx(dte, here("data/tables/supp_table3a.xlsx"))
+
+dte %>% datatable()
 ```
 
 ```{r down_regulated}
-oxygenTranscripts %>%
+down_dte <- oxygenTranscripts %>%
   dplyr::select("Transcript ID" = "Transcript",
                 "Transcript Name" = "TranscriptName",
                 "Gene ID" = "Gene",
@@ -132,21 +137,66 @@ oxygenTranscripts %>%
                 "logFC",
                 "FDR") %>%
   dplyr::filter(FDR < 0.05 & logFC <= -1) %>%
-  datatable()
+  mutate("FDR" = formatC(FDR, digits = 2, format = "e"),
+         "logFC" = format(round(logFC, 2), nsmall = 2),
+         "logCPM" = format(round(logCPM, 2), nsmall = 2))
+
+writexl::write_xlsx(down_dte, here("data/tables/supp_table3b.xlsx"))
+
+down_dte %>% datatable()
 ```
 
-# Supp table 4 - Gene significant in DTE and DTU
-```{r DTE_DTU_only}
-sig_ranked_dtu <- sig_dtu %>%
-  mutate(rank_in_dtu = 1:dim(sig_dtu)[1])
+```{r up_regulated}
+up_dte <- oxygenTranscripts %>%
+  dplyr::select("Transcript ID" = "Transcript",
+                "Transcript Name" = "TranscriptName",
+                "Gene ID" = "Gene",
+                "Gene Name" = "GeneName",
+                "logCPM",
+                "logFC",
+                "FDR") %>%
+  dplyr::filter(FDR < 0.05 & logFC >= 1) %>%
+  mutate("FDR" = formatC(FDR, digits = 2, format = "e"),
+         "logFC" = format(round(logFC, 2), nsmall = 2),
+         "logCPM" = format(round(logCPM, 2), nsmall = 2))  
 
-sig_ranked_dtu %>%
+writexl::write_xlsx(up_dte, here("data/tables/supp_table3c.xlsx"))
+
+up_dte %>% datatable()
+```
+
+
+# Supp table 4 - DTU results
+```{r DTU_results}
+dtu_results <- oxygenDTU %>%
+  dplyr::select("Gene",
+                "Gene Name" = "gene_name",
+                "Transcript",
+                "Transcript Name" = "transcript_name",
+                "Gene FDR" = "geneFDR",
+                "Transcript FDR" = "txpFDR") %>%
+  mutate(
+    "Gene FDR" = formatC(`Gene FDR`, digits = 2, format = "e"),
+    "Transcript FDR" = formatC(`Transcript FDR`, digits = 2, format = "e")
+  )
+
+writexl::write_xlsx(dtu_results, here("data/tables/supp_table4.xlsx"))
+
+dtu_results %>% datatable()
+```
+
+# Supp table 5 - Gene significant in DTE and DTU
+```{r DTE_DTU_only}
+ranked_dtu <- sig_dtu %>%
+  distinct() %>%
+  mutate(rank_in_dtu = 1:dim(.)[1])
+
+dte_and_dtu <- sig_dtu %>%
   dplyr::filter(Gene %in% sig_tx$Gene,
                 !Gene %in% sig_genes$Gene) %>%
   dplyr::select("Gene",
                 "gene_name",
-                "DTU FDR",
-                "rank_in_dtu") %>%
+                "DTU FDR") %>%
   inner_join(sig_tx %>%
               dplyr::select("Gene",
                             "Transcript",
@@ -154,28 +204,26 @@ sig_ranked_dtu %>%
                             "DTE logFC",
                             "DTE FDR"),
             by = "Gene") %>%
-  dplyr::select("Gene",
-                "Transcript",
+  left_join(ranked_dtu %>%
+              dplyr::select("Gene", "rank_in_dtu"),
+            by = "Gene") %>%
+  dplyr::select("Gene" = "gene_name",
+                "Transcript" = "TranscriptName",
                 "DTU FDR",
                 "DTE FDR",
                 "DTE logFC",
-                "rank in DTU" = "rank_in_dtu") %>%
-  mutate(`DTU FDR` = formatC(`DTU FDR`, digits = 2, width = 2, format = "e"),
-         `DTE FDR` = formatC(`DTU FDR`, digits = 2, width = 2, format = "e"),
-         `DTE logFC` = formatC(`DTE logFC`, digits = 3, width = 3)) %>%
-  datatable()
+                "Rank in DTU" = "rank_in_dtu") %>%
+  dplyr::arrange(`Rank in DTU`) %>%
+  distinct() %>%
+  mutate("DTU FDR" = formatC(`DTU FDR`, digits = 2, format = "e"),
+         "DTE FDR" = formatC(`DTE FDR`, digits = 2, format = "e"),
+         "DTE logFC" = format(round(`DTE logFC`, 2), nsmall = 2))
+  
+
+writexl::write_xlsx(dte_and_dtu, here("data/tables/supp_table5.xlsx"))
+
+dte_and_dtu %>% datatable()
 ```
 
-# Supp table 5 - DTU results
-```{r DTU_results}
-oxygenDTU %>%
-  dplyr::select("Gene",
-                "Gene Name" = "gene_name",
-                "Transcript",
-                "Transcript Name" = "transcript_name",
-                "Gene FDR" = "geneFDR",
-                "Transcript FDR" = "txpFDR") %>%
-  datatable()
-```
 
 

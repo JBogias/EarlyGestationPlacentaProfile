@@ -42,12 +42,25 @@ dtelist <- read_rds(here("data/counts/dtelist.rds"))
 dgelist <- read_rds(here("data/counts/dgelist.rds"))
 
 dgelist$samples <- dgelist$samples %>%
-  mutate(GestationGroup = Timepoint %>% str_remove("weeks"),
-         GestationGroup = factor(GestationGroup, levels = c("6-10", "11-23")))
+  mutate(GestationGroup = ifelse(GestationalAge <= 10,
+                            paste0("6", "\U2012", "10"),
+                            paste0("11", "\U2012", "23")
+                            ),
+         GestationGroup = factor(GestationGroup, levels = c(
+           paste0("6", "\U2012", "10"),
+           paste0("11", "\U2012", "23")
+           )))
 
 dtelist$samples <- dtelist$samples %>%
-  mutate(GestationGroup = Timepoint %>% str_remove("weeks"),
-         GestationGroup = factor(GestationGroup, levels = c("6-10", "11-23")))
+  mutate(GestationGroup = ifelse(GestationalAge <= 10,
+                            paste0("6", "\U2012", "10"),
+                            paste0("11", "\U2012", "23")
+                            ),
+         GestationGroup = factor(GestationGroup,
+                                 levels = c(paste0("6", "\U2012", "10"),
+                                            paste0("11", "\U2012", "23"))
+                                 )
+         )
 ```
 
 # Figure S1 - Transcript Expression Volcano Plot
@@ -96,7 +109,9 @@ volcano <- oxygenTranscripts %>%
   labs(x = "Log-fold change (logFC)",
        y = "Significance (-log10 FDR)") +
   ggtitle(
-    "Differential Transcript Expression: 6-10 weeks' vs 11-23 weeks' gestation"
+    paste0("Differential Transcript Expression: 6",
+           "\U2012",
+           "10 weeks' vs 11-23 weeks' gestation")
     ) +
   theme_bw() +
   theme(axis.title = element_text(size = 20,
@@ -128,7 +143,7 @@ ggsave(path = here("data/figures/"),
 # Figure S2 - FLT, PGF, IGF2
 ```{r FLT1}
 flt_exp <- plot_txp(
-  dgelist = flta,
+  dgelist = dtelist,
   target_gene = "FLT1",
   variable = "GestationalAge",
   level = "transcript",
@@ -866,8 +881,8 @@ gpr126 <- txprofiler(
 ggsave(path = here("data/figures/"),
        filename = "supp_figure9.png",
        plot = gpr126,
-       width = 7500,
-       height = 6500,
+       width = 8250,
+       height = 7150,
        units = "px",
        dpi = 500)
 ```
@@ -1196,7 +1211,3 @@ ggsave(path = here("data/figures/"),
        units = "px",
        dpi = 500)
 ```
-
-
-
-
