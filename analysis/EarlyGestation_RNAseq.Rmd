@@ -44,6 +44,7 @@ library(here)
 First need to import annotations, the GRCh37 build of the human genome was used to align the RNA-seq data and so the GRCh37 annotations are used here.
 
 For the annotations I elected to use the more recent annotations for gene and transcript length. Recent length annotations are more reliable than previous versions and they have been used in this analysis.
+
 ```{r annotations}
 ah <- AnnotationHub()
 
@@ -53,7 +54,10 @@ transGR <- transcripts(ensDb)
 transGR$gene_name <- mcols(genesGR)[mcols(transGR)$gene_id,"gene_name"]
 transGR$length <- lengthOf(ensDb, "tx")
 
+tibble(x = 1:10, y = 2:11) %>% set_colnames(c("a", "b"))
+
 ensDb <- ah[["AH10684"]]
+
 transcript_names <- ensDb %>%
   as.data.frame() %>%
   dplyr::filter(type == "transcript") %>%
