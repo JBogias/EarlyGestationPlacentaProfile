@@ -477,8 +477,8 @@ change_expr <- props %>%
   rownames_to_column(var = "Transcript") %>%
   as_tibble() %>%
   left_join(early_rownames, by = "Transcript") %>%
-  left_join(dtelist$genes, #transGR %>% as.data.frame(),
-            by = c("Transcript" = "transcript_id")) %>%
+  left_join(DTElist$genes, #transGR %>% as.data.frame(),
+            by = c("Transcript" = "tx_id")) %>%
   dplyr::select("Gene" = "gene_id",
                 "Transcript",
                 "early",

@@ -223,3 +223,7 @@ ggsave(filename = "Figure_5.png",
 #10.96 13.88
 
 ```
+
+```{r}
+adam10
+```

@@ -27,6 +27,7 @@ library(ggplot2)
 library(pheatmap)
 library(VennDiagram)
 library(AnnotationHub)
+library(writexl)
 library(DT)
 library(here)
 ```
@@ -49,7 +50,9 @@ top_expressed <- oxygenTranscripts %>%
                 "Transcript Length" = "length",
                 "logCPM") 
 
-top_expressed$logCPM <- format(round(top_expressed$logCPM, 2), nsmall = 2)
+top_expressed$logCPM <- format(
+  round(as.numeric(top_expressed$logCPM), 2),
+  nsmall = 2)
 
 top_expressed %>%
   datatable()
@@ -217,10 +220,11 @@ dte_and_dtu <- sig_dtu %>%
   distinct() %>%
   mutate("DTU FDR" = formatC(`DTU FDR`, digits = 2, format = "e"),
          "DTE FDR" = formatC(`DTE FDR`, digits = 2, format = "e"),
-         "DTE logFC" = format(round(`DTE logFC`, 2), nsmall = 2))
+         "DTE logFC" = format(round(as.numeric(`DTE logFC`), 2), nsmall = 2))
   
 
-writexl::write_xlsx(dte_and_dtu, here("data/tables/supp_table5.xlsx"))
+writexl::write_xlsx(dte_and_dtu,
+                    here("data/tables/supp_table5.xlsx"))
 
 dte_and_dtu %>% datatable()
 ```
