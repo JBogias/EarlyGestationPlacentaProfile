@@ -28,6 +28,8 @@ library(edgeR)
 library(ggplot2)
 library(ggfortify)
 library(cowplot)
+library(quantro)
+library(qsmooth)
 library(DT)
 library(plotly)
 library(here)
@@ -287,8 +289,7 @@ DGElist <- dge_counts %>%
     genes = rownames(.) %>%
       enframe(name = NULL, value = "gene_id") %>%
       left_join(grch38_gene_anno,
-                by = "gene_id")) %>%
-  calcNormFactors()
+                by = "gene_id"))
 ```
 
 ### Smooth quantile normalisation
@@ -307,7 +308,7 @@ be appropriate.
 
 The reader is encouraged to look to the original paper for more information if desired.
 
-```{r quantile_normalisation_dge, eval=FALSE}
+```{r quantile_normalisation_dge}
 eset <- ExpressionSet(
   assayData = round(DGElist$counts, 0),
   phenoData = AnnotatedDataFrame(
@@ -352,7 +353,7 @@ legend(
 ```
 
 The results of the quantro test
-```{r quantro_dge, eval=FALSE}
+```{r quantro_dge}
 qFit <- quantro(
   r_ds_mat, 
   groupFactor = pData(eset)$Timepoint,
@@ -364,7 +365,7 @@ print(qFit)
 
 Smooth quantile normalisation is applied as the differences between distributions aren't greatly exceeding sample variability. Smooth quantile normalisation is applied using methods from the [qsmooth paper](https://academic.oup.com/biostatistics/article/19/2/185/3949169#113055110)
 
-```{r qsmooth_dge, eval=FALSE}
+```{r qsmooth_dge}
 qs <- qsmooth(
   exprs(eset),
   group_factor = pData(eset)$Timepoint
@@ -376,7 +377,7 @@ DGElist$counts <- qs@qsmoothData
 
 Transcripts were considered as detectbale if above `r formals(filterCounts)$minCPM`CPM in more than `r formals(filterCounts)$minSamp` samples.
 
-```{r read_distributions_dge, eval=FALSE}
+```{r read_distributions_dge}
 qsmooth::qsmoothData(qs) %>%
   as.data.frame() %>%
   rownames_to_column("gene") %>%
@@ -604,8 +605,7 @@ DTElist <- dte_counts %>%
     genes = rownames(.) %>%
       enframe(name = NULL, value = "transcript_id") %>%
       left_join(grch38_txp_anno,
-                by = "transcript_id")) %>%
-  calcNormFactors()
+                by = "transcript_id"))
 ```
 
 ### Smooth quantile normalisation
@@ -625,7 +625,7 @@ be appropriate.
 
 The reader is encouraged to look to the original paper for more information if desired.
 
-```{r quantile_normalisation_dte, eval=FALSE}
+```{r quantile_normalisation_dte}
 eset <- ExpressionSet(
   assayData = round(DTElist$counts, 0),
   phenoData = AnnotatedDataFrame(
@@ -670,7 +670,7 @@ legend(
 ```
 
 The results of the quantro test
-```{r quantro_dte, eval=FALSE}
+```{r quantro_dte}
 qFit <- quantro(
   r_ds_mat, 
   groupFactor = pData(eset)$Timepoint,
@@ -682,7 +682,7 @@ print(qFit)
 
 Smooth quantile normalisation is applied as the differences between distributions aren't greatly exceeding sample variability. Smooth quantile normalisation is applied using methods from the [qsmooth paper](https://academic.oup.com/biostatistics/article/19/2/185/3949169#113055110)
 
-```{r qsmooth_dte, eval=FALSE}
+```{r qsmooth_dte}
 qs <- qsmooth(
   exprs(eset),
   group_factor = pData(eset)$Timepoint
@@ -694,7 +694,7 @@ DTElist$counts <- qs@qsmoothData
 
 Transcripts were considered as detectbale if above `r formals(filterCounts)$minCPM`CPM in more than `r formals(filterCounts)$minSamp` samples.
 
-```{r read_distributions_dte, eval=FALSE}
+```{r read_distributions_dte}
 qsmooth::qsmoothData(qs) %>%
   as.data.frame() %>%
   rownames_to_column("gene") %>%

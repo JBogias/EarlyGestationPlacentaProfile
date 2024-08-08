@@ -2,8 +2,11 @@
 title: "Early Gestation DTU"
 author: "Justin Bogias"
 date: "`r format(Sys.Date(), '%d %b, %Y')`"
-output: 
-  rmdformats::readthedown
+output:
+  html_document:
+    toc: yes
+    code_folding: hide
+    toc_float: true
 editor_options:
   chunk_output_type: console
 ---
@@ -16,10 +19,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Load Packages
 ```{r loadPackage}
-library(rmarkdown)
-library(rmdformats)
 library(dplyr)
 library(readr)
 library(stringr)
@@ -33,17 +33,16 @@ library(stageR)
 library(quantro)
 library(qsmooth)
 library(tximport)
-#library(ensembldb)
-#library(AnnotationHub)
+library(ensembldb)
+library(AnnotationHub)
 library(DT)
 library(here)
 ```
 
-# Preparations
-## Import annotations
+# Import annotations
 Load in the ensembl gene annotations here to be used throughout the DGE analysis. This will connect to an ensembl annotation database in which the ensembl version 99 metadata will be stored as an object. This will give information on the gene ID and name, length, biotype and other information. This step may take some time as the data can be somewhat large.
 
-```{r genesGR, eval=FALSE}
+```{r genesGR}
 ah <- AnnotationHub()
 
 ensDb <- ah[["AH78783"]]
@@ -52,28 +51,12 @@ transGR <- transcripts(ensDb)
 transGR$gene_name <- mcols(genesGR)[mcols(transGR)$gene_id,"gene_name"]
 transGR$length <- lengthOf(ensDb, "tx")
 
-write_csv(as.data.frame(transGR),
-          path = here("data/grch38_txGR.csv.gz"))
-
-write_csv(as.data.frame(genesGR),
-          path = here("data/grch38_genesGR.csv.gz"))
-
 ensDb <- ah[["AH10684"]]
 transcript_names <- ensDb %>%
   as.data.frame() %>%
   dplyr::filter(type == "transcript") %>%
   dplyr::select("transcript_id",
                 "transcript_name")
-
-write_csv(transcript_names,
-          here("data/tx_names.csv.gz"))
-```
-
-Now load the annotations that have been predefined above
-```{r}
-gene_anno <- read_csv(here("data/grch38_genesGR.csv.gz"))
-tx_anno <- read_csv(here("data/grch38_txGR.csv.gz"))
-transcript_names <- read_csv(here("data/tx_names.csv.gz"))
 ```
 
 Despite the fact we are primarily only going to be using `ensembldb` for our annotations, we need the transcripts names to make the plots look a bit nicer. We can form a table with transcript IDs matched with their names here.
@@ -84,7 +67,7 @@ oxygenGenes <- read_csv(here("data/oxygenGenes.csv.gz"))
 oxygenTranscripts <- read_csv(here("data/oxygenTranscripts.csv.gz"))
 ```
 
-## Data Importation
+# Data Importation
 
 The sample metadata is loaded here, detailing the patient information. Many different variables are recorded in these datasets, but of primary concern to this analysis is gestational age. Two separate sets of metadata will be required which contain information of the data from the Pregnancy Advisory Centre (PAC). PAC samples cover all of early gestation, from 6-23 weeks gestation.
 
@@ -128,16 +111,14 @@ Import transcript abundances calculated from *salmon*. These counts are validate
 abundance_salmon <- read_csv(here("data/salmon_abundance.csv.gz"))
 ```
 
-## Data Processing
+# Data Processing
 ## Remove XY chromosomes
 
 By plotting the ratio of male:female samples in our data at each gestational age, it is clear that genes on sex chromosomes may be overrepresented across each of the timepoints. Hence they are removed in the following code.
 ```{r autosomeTxpID}
-autosomeTxpID <- dplyr::filter(tx_anno, !seqnames %in% c("MT", "X", "Y")) %>%
-  dplyr::select(tx_id) %>%
-  as.data.frame() %>%
-  as.matrix() %>%
-  as.character() %>%
+autosomeTxpID <- transGR %>%
+  subset(!seqnames %in% c("MT", "X", "Y")) %>%
+  names() %>%
   intersect(rownames(transCounts$counts))
 
 transCounts$counts <- transCounts$counts[autosomeTxpID,]
@@ -179,8 +160,8 @@ DTElist <- transCounts %>%
     samples = colnames(.) %>%
       enframe(name = NULL, value = "ID") %>%
       left_join(pd),
-    genes =  dplyr::filter(tx_anno,
-                           tx_id %in% rownames(.)) %>%
+    genes =  mcols(transGR)[rownames(.),] %>%
+      as.data.frame() %>%
       dplyr::select(tx_id, tx_biotype, gene_id, gene_name, gc_content, length)
   )
 
@@ -231,7 +212,7 @@ dtu_counts <- tximport::makeCountsFromAbundance(
   countsFromAbundance = "lengthScaledTPM") %>%
   as.data.frame() %>%
   rownames_to_column(var = "feature_id") %>%
-  left_join(tx_anno %>%
+  left_join(as.data.frame(transGR) %>%
               dplyr::select("gene_id", "tx_id"),
             by = c("feature_id" = "tx_id")) %>%
   as_tibble()
@@ -243,7 +224,6 @@ dtu_counts <- tximport::makeCountsFromAbundance(
 ## DRIMSeq analysis
 The `dmDSdata` function required the metadata (and counts) to have specific column names by which it selects the appropriate fields of info
 The top gene IDs for plotting can be selected by changing the argument in the `dplyr::slice` function. Specifying `1` simply means taking the top gene when ordered by the column specified in `dplyr::arrange`. Recommended columns for ordering are `pvalue` or `adj_pvalue`
-
 ```{r dmDSdata}
 set.seed(123)
 
@@ -311,7 +291,7 @@ dtu_results@mean_expression %>%
   theme_bw()
 ```
 
-## Two-stage validation analysis
+# Two-stage validation analysis
 
 The two stage analysis is the one that *den Berge et al* (with *C Soneson* who authors pretty much everything you're using) proposed in their paper.
 
@@ -361,7 +341,7 @@ oxygenDTU <- stageRTx(pScreen = pScreen,
     geneFDR = gene,
     txpFDR = transcript
   ) %>%
-  left_join(gene_anno,
+  left_join(as.data.frame(genesGR),
             by = c("Gene" = "gene_id")
   ) %>%
   left_join(transcript_names, 
@@ -372,7 +352,7 @@ oxygenDTU <- oxygenDTU %>%
   mutate("DTU" = geneFDR < 0.05)
 ```
 
-The numbers of genes undergoing DTU and transcripts showing a significant change in proportion are shown here
+Print DTU results
 ```{r}
 sig_dtu <- oxygenDTU %>%
   dplyr::filter(geneFDR < 0.05)
@@ -380,16 +360,7 @@ sig_dtu <- oxygenDTU %>%
 print(dim(sig_dtu))
 ```
 
-### Why are there results for both genes and transcripts?
-One might be puzzled by the fact that statistical significance is given for both genes and transcripts. The reason is because this DTU analysis asks two questions of the data:
-
-  1. *Which genes possess transcripts that change in proportions relative to one another, thereby exhibiting differential transcript usage?* And;
-  2. *Which transcripts show a significant change in their proportions of overall gene expression, independent of their sister transcripts?*
-  
-For the first question above, *DRIMSeq* uses a Dirichlet Multinomial model to test for DTU. This will test on a gene-by-gene bases (multiple hypothesis testing). If the null hypothesis for a gene is not retained when corrected for the false discovery rate (FDR < 0.05), then that gene is statistically significant for exhibitng DTU.
-For the second question above, a negative binomial model is used to assess for changes in transcript proportions. Does this sound familiar? It works similarly to a differential expression analysis, though we are not provided a log fold change here. Once again, this is tested on a transcript-by-transcript basis (like differential transcript expression). If the null hypothesis for a transcript is not retained after FDR correction (FDR < 0.05), then that transcript is statistically significant for a change in its proportion of its genes overall expression.
-
-## Isoform Numbers
+# Data Visualisations
 Visualisation of the number of isoforms per gene by using a pie chart. First, the number of isoforms in the entire DTU gene set of 2307 genes is plotted. 
 ```{r plotIsoforms}
 table(oxygenDTU$gene_name) %>%
@@ -454,7 +425,7 @@ oxygenDTU %>%
   )
 ```
 
-## Global Proportions
+# Global Proportions
 In DRIMseq, transcript proportions are calculated relative to their abundance compared against all other transcripts in a specific sample. This abundance is then aggregated into it's sample group and then compared against another experimental set. We can make our own changing proportion plot (deltaProp) to see how these changes are occuring and we may even be able to make a global representation of transcript proportion changes.
 
 
@@ -501,7 +472,7 @@ change_expr <- props %>%
                 "late")
 ```
 
-Here we retrieve proportion percentages in early gestation for transcripts
+Get proportion percentages in early gestation
 ```{r changing_props}
 early_props <- tapply(change_expr$early %>%
                         set_names(change_expr$Transcript),
@@ -545,7 +516,7 @@ changing_props <- early_props %>%
 table(changing_props$deltaProp == 0)
 ```
 
-Here we get changing proportions for genes in the DTU analysis
+Changing proportions for genes in the DTU analysis
 ```{r DTU_delta_props}
 DTU_changing_proportions <- changing_props %>%
   dplyr::filter(Gene %in% oxygenDTU$Gene)
@@ -564,9 +535,7 @@ DTU_changing_props <- changing_props %>%
                   as.character()))
 ```
 
-## Global Proportion Changes
-Here we visualise the changing proportions of transcripts across the transcriptome. Each transcript is shown with their changing proportions that have either increased of decreased across gestation. As relatively less genes had over 2 distinct transcript isoforms in the filtered dataset, many of these transcripts will exhibit a symmetrical pattern of change. For example, if transcript A has 35% proportion of total gene expression and transcript B has 65%, when one changes, the other must as well.
-
+## Global Prop Figure 4
 ```{r plotProportions_txplevel}
 global_prop_res <- dtu_results@mean_expression %>%
   cpm(log = TRUE) %>%
