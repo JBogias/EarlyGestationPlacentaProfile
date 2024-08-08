@@ -33,8 +33,8 @@ library(plotly)
 library(here)
 ```
 
-
-# Annotations
+# Preparation
+## Annotations
 
 First need to import annotations, the GRCh37 build of the human genome was used to align the RNA-seq data and so the GRCh37 annotations are used here.
 
@@ -93,18 +93,17 @@ grch38_gene_anno <- genesGR %>%
 write_csv(grch38_gene_anno, here("data/grch38_gene_anno.csv.gz"))
 ```
 
-# Load Annotations
-This is for Docker because the caches are a pain, will need to mount them probs
+## Load Annotations
+To save on download times, we can just save and load the data here
 ```{r}
 grch38_gene_anno <- read_csv(here("data/grch38_gene_anno.csv.gz"))
 
 grch38_txp_anno <- read_csv(here("data/grch38_txp_anno.csv.gz"))
 ```
 
-# Data import
+## Import Data
 
 Now it's time to import the RNA-seq data. However, samples that were not pure chorionic villus tissue need to be removed from further analyses. Two other samples also had extremely poor sequencing quality and will also be removed. The samples are removed to mitigate any technical or systematic bias in the results.
-
 ```{r impure_samples}
 impure_samples <- c(
   "PAC006", "PAC008", "PAC024", "PAC025",
@@ -152,9 +151,8 @@ colnames(transCounts$counts) <- colnames(transCounts$counts) %>%
 ```
 
 
-# Data Preparation
+## Retain only autosomes
 By plotting the ratio of male:female samples in our data at each gestational age, it is clear that genes on sex chromosomes may be overrepresented across each of ghe timepoints. Hence they are removed in the following code.
-
 ```{r autosomeTxpID}
 autosomeTxpID <- grch38_txp_anno %>%
   dplyr::filter(
@@ -170,10 +168,9 @@ transCounts$counts <- transCounts$counts[autosomeTxpID,]
 transCounts$annotation <- transCounts$annotation[autosomeTxpID,]
 ```
 
-# Gene-level analysis
-
-## Form gene counts
-
+# Differential Expression Analysis {.tabset}
+## Gene-level analysis
+### Form gene counts
 Now we will aggregate transcript level aboundances into gene counts. Transcript abundances are simply fractions of the full gene count and so merging them offers estimates for gene expression.
 ```{r aggregate}
 txp_mat <- transCounts$counts
@@ -208,7 +205,7 @@ gene_counts <- txp_mat %>%
   round(0)
 ```
 
-## Filtering
+### Filtering
 Next we wish to filter the data to remove low expressed genes. This serves to reduce the number of genes that are used as input for differential gene expression multiple hypothesis testing. Too many genes will result in an inflated false discovery rate. As a big portion of genes will have such low counts that they can be disregarded, we run the risk of sacrificing detection of genes with biological relevance to account for genes with no impact on biology.
 
 ```{r filter_counts_dge}
@@ -265,7 +262,7 @@ filt <- gene_counts %>%
 cowplot::plot_grid(unfilt, filt)
 ```
 
-## Remove alternate builds
+### Remove alternate builds
 A genome build may contain genes that originate from alternate builds, which results in certain genes being counted twice or many times. We simply want the standard build as too many of the same gene may confuse our results. 
 ```{r removeHSGs_dge}
 dge_counts <- gene_counts %>%
@@ -279,7 +276,7 @@ dge_counts <- gene_counts %>%
   .[,!colnames(.) %in% impure_samples]
 ```
 
-## Create DGEList
+### Create DGEList
 With the gene counts, metadate, and annotations handy, we can use them to form our DGEList. This is similar to a Summarised Experiment or even a 'data cube' where each table informs the counts table based on the gene ID match.
 ```{r DGElist}
 DGElist <- dge_counts %>%
@@ -294,7 +291,7 @@ DGElist <- dge_counts %>%
   calcNormFactors()
 ```
 
-## Smooth quantile normalisation
+### Smooth quantile normalisation
 The *quantro* package can be used to test for global differences in distributions between groups to guide the choice of whether it is appropriate to use global normalization methods, such as quantile normalisation. For instance, if the variability between groups is larger than the variability within each group then there may be global differences present rendering quantile normalisation inappropriate (depending on the type and source of variation)
 
 As described in the [quantro paper]("https://link.springer.com/article/10.1186/s13059-015-0679-0#") the main function performs two tests.
@@ -402,7 +399,7 @@ qsmooth::qsmoothData(qs) %>%
   theme_bw()
 ```
 
-## Principal Component Analysis - Gene Counts
+### Principal Component Analysis - Gene Counts
 A Principal Component Analysis (PCA) is a statistical technique that reduces the dimensionality of a dataset while preserving as much variability as possible. This is achieved by transforming the original variables into a new set of variables called principal components (PC). These capture a specific amount of variability, where the first PC (PC1) contains the most variation, PC2 the next most, and so on. Essentially, the first few PCs retain most of the variation present in the original dataset.
 
 The samples are spread on the first principle component by gestational age, meaning gestational age contributes the most variation in our dataset, which is great since we will be testin by timepoint, which is gestational age.
@@ -432,7 +429,7 @@ DGElist$counts %>%
 ```
 
 
-## Differential Gene Expression Analysis
+### Differential Gene Expression Analysis
 Now we perform our DGE analysis. A Genewise Negative Binomial Generalized Linear Models with Quasi-Dispersion Estimation is implemented. This model accurately models overdispersion that is inherent to RNA-seq data and provides a dispersion parameter for each gene instead of assuming a general dispersion for each one. The Quasi-Dispersion estimation adjusts for sample-specific variability as well to hone in on true biological noise in the data.
 
 First, we set some parameters to control the effect sizes. `alpha` sets the FDR threshold for statistical significance. Since we are multiple hypothesis testing thousands of genes, an FDR provides a quality control for Type I error, which are false positives.
@@ -519,10 +516,10 @@ print(dim(sig_genes))
 ```
 
 
-# Transcript-level analysis
+## Transcript-level analysis
 Now we run the previous code back with transcripts
 
-## Filtering
+### Filtering
 We wish to filter the data to remove low expressed genes. This serves to reduce the number of genes that are used as input for differential gene expression multiple hypothesis testing. Too many genes will result in an inflated false discovery rate. As a big portion of genes will have such low counts that they can be disregarded, we run the risk of sacrificing detection of genes with biological relevance to account for genes with no impact on biology.
 ```{r filter_counts_dte}
 filterCounts <- function (
@@ -581,7 +578,7 @@ filt_tx_exp <- tx_counts %>%
 cowplot::plot_grid(unfilt_tx_exp, filt_tx_exp)
 ```
 
-## Remove alternate builds
+### Remove alternate builds
 A genome build may contain genes that originate from alternate builds, which results in certain genes being counted twice or many times. We simply want the standard build as too many of the same gene may confuse our results. 
 ```{r removeHSGs_dte}
 dte_counts <- transCounts %>%
@@ -596,7 +593,7 @@ dte_counts <- transCounts %>%
   .[,!colnames(.) %in% impure_samples]
 ```
 
-## Create DTEList
+### Create DTEList
 Here we create DTElist and calculate normalisation factors using qsmooth. A common, but uncommonly addressed, question which arises in RNA-seq analyses is if the normalisation methods used in the workflow are appropriate based on the distribution of the reads in the data. There is a risk of normalising the biological differences in the data in certain scenarios which may be unnecessary, and at worst inappropriate, for the data under analysis. Most differential expression methods operate under the assumption that only a small proportion of the genes in question are differentially expressed and that differences in read distributions between testing samples are due to technical issues in the data. 
 ```{r DTElist}
 DTElist <- dte_counts %>%
@@ -611,7 +608,7 @@ DTElist <- dte_counts %>%
   calcNormFactors()
 ```
 
-## Smooth quantile normalisation
+### Smooth quantile normalisation
 
 The *quantro* package can be used to test for global differences in distributions between groups to guide the choice of whether it is appropriate to use global normalization methods, such as quantile normalisation. For instance, if the variability between groups is larger than the variability within each group then there may be global differences present rendering quantile normalisation inappropriate (depending on the type and source of variation)
 
@@ -721,7 +718,7 @@ qsmooth::qsmoothData(qs) %>%
 ```
 
 
-## Principal Component Analysis - Transcript-level
+### Principal Component Analysis - Transcript-level
 A Principal Component Analysis (PCA) is a statistical technique that reduces the dimensionality of a dataset while preserving as much variability as possible. This is achieved by transforming the original variables into a new set of variables called principal components (PC). These capture a specific amount of variability, where the first PC (PC1) contains the most variation, PC2 the next most, and so on. Essentially, the first few PCs retain most of the variation present in the original dataset.
 
 The samples are spread on the first principle component by gestational age, meaning gestational age contributes the most variation in our dataset, which is great since we will be testin by timepoint, which is gestational age.
@@ -756,7 +753,7 @@ fig1
 ```
 
 
-## Differential Transcript Expression Analysis
+### Differential Transcript Expression Analysis
 Now we perform our DGE analysis. A Genewise (or I guess transcript-wise) Negative Binomial Generalized Linear Models with Quasi-Dispersion Estimation is implemented. This model accurately models overdispersion that is inherent to RNA-seq data and provides a dispersion parameter for each gene instead of assuming a general dispersion for each one. The Quasi-Dispersion estimation adjusts for sample-specific variability as well to hone in on true biological noise in the data.
 
 First, we set some parameters to control the effect sizes. `alpha` sets the FDR threshold for statistical significance. Since we are multiple hypothesis testing thousands of genes, an FDR provides a quality control for Type I error, which are false positives.
