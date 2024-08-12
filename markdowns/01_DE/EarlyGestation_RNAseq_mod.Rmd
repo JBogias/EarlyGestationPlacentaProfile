@@ -30,6 +30,8 @@ library(ggfortify)
 library(cowplot)
 library(quantro)
 library(qsmooth)
+library(Biobase)
+library(DESeq2)
 library(DT)
 library(plotly)
 library(here)
@@ -170,7 +172,7 @@ transCounts$counts <- transCounts$counts[autosomeTxpID,]
 transCounts$annotation <- transCounts$annotation[autosomeTxpID,]
 ```
 
-# Differential Expression Analysis {.tabset}
+# Differential Expression Analysis
 ## Gene-level analysis
 ### Form gene counts
 Now we will aggregate transcript level aboundances into gene counts. Transcript abundances are simply fractions of the full gene count and so merging them offers estimates for gene expression.
@@ -292,6 +294,11 @@ DGElist <- dge_counts %>%
                 by = "gene_id"))
 ```
 
+Save the dgelist
+```{r}
+write_rds(DGElist, here("data/dgelist.rds"))
+```
+
 ### Smooth quantile normalisation
 The *quantro* package can be used to test for global differences in distributions between groups to guide the choice of whether it is appropriate to use global normalization methods, such as quantile normalisation. For instance, if the variability between groups is larger than the variability within each group then there may be global differences present rendering quantile normalisation inappropriate (depending on the type and source of variation)
 
@@ -309,7 +316,7 @@ be appropriate.
 The reader is encouraged to look to the original paper for more information if desired.
 
 ```{r quantile_normalisation_dge}
-eset <- ExpressionSet(
+eset <- Biobase::ExpressionSet(
   assayData = round(DGElist$counts, 0),
   phenoData = AnnotatedDataFrame(
     pd %>%
@@ -325,7 +332,7 @@ keepMeID <- sapply(
 )
 eset <- eset[keepMeID,]
 
-ds <- DESeqDataSetFromMatrix(
+ds <- DESeq2::DESeqDataSetFromMatrix(
   countData = eset,
   colData = pData(eset),
   design = ~ Timepoint
@@ -481,6 +488,11 @@ sig_genes <- oxygenGenes %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1) 
 ```
 
+Save the results here for use in other workflows
+```{r}
+write_csv(oxygenGenes, here("data/oxygenGenes.csv.rds"))
+```
+
 A volcano plot shows us the logFC with the FDR to give an overview of all significant transcripts in our results. The x axis shows the logFC while the y axis shows the -log10(FDR)
 Hover over each point to get info about it
 ```{r}
@@ -608,6 +620,11 @@ DTElist <- dte_counts %>%
                 by = "transcript_id"))
 ```
 
+Save the dtelist
+```{r}
+write_rds(DTElist, here("data/dtelist.rds"))
+```
+
 ### Smooth quantile normalisation
 
 The *quantro* package can be used to test for global differences in distributions between groups to guide the choice of whether it is appropriate to use global normalization methods, such as quantile normalisation. For instance, if the variability between groups is larger than the variability within each group then there may be global differences present rendering quantile normalisation inappropriate (depending on the type and source of variation)
@@ -626,7 +643,7 @@ be appropriate.
 The reader is encouraged to look to the original paper for more information if desired.
 
 ```{r quantile_normalisation_dte}
-eset <- ExpressionSet(
+eset <- Biobase::ExpressionSet(
   assayData = round(DTElist$counts, 0),
   phenoData = AnnotatedDataFrame(
     pd %>%
@@ -642,7 +659,7 @@ keepMeID <- sapply(
 )
 eset <- eset[keepMeID,]
 
-ds <- DESeqDataSetFromMatrix(
+ds <- DESeq2::DESeqDataSetFromMatrix(
   countData = eset,
   colData = pData(eset),
   design = ~ Timepoint
@@ -805,6 +822,11 @@ oxygenTranscripts <- glmQLFit(DTElist,
 sig_tx <- oxygenTranscripts %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1) 
 
+```
+
+Save the results here for use in other workflows
+```{r}
+write_csv(oxygenTranscripts, here("data/oxygenTranscripts.csv.gz"))
 ```
 
 Now pump out the table

@@ -1,0 +1,319 @@
+---
+title: "Early Gestation GO analysis"
+author: "Justin Bogias"
+date: "`r format(Sys.Date(), '%d %b, %Y')`"
+output: 
+  rmdformats::readthedown
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE)
+```
+
+In this workflow we will perform a Gene Ontology Enrichment Analysis on the RNA-seq data. The purpose of this is to identify which biological processes, molecular functions, or cellular components are highly represented in our sets of genes that are statistically significant for differential expression (found in both the gene and transcript level).
+
+# Library Preparation
+```{r packages, warning=FALSE, message=FALSE}
+library(rmarkdown)
+library(rmdformats)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(tibble)
+library(magrittr)
+library(ggplot2)
+library(AnnotationHub)
+library(ensembldb)
+library(goseq)
+library(rrvgo)
+library(org.Hs.eg.db)
+library(DT)
+library(here)
+```
+
+# Import Data
+## Previouis Analysis Results
+First we will import the data we will need for this workflow. These are created in previous workflows. We don't bother with recreating these here to keep the document shorter and reduce redundancy.
+```{r significance_data}
+oxygenGenes <- read_csv(here("data/oxygenGenes.csv.gz"))
+oxygenTranscripts <- read_csv(here("data/oxygenTranscripts.csv.gz"))
+oxygenDTU <- read_csv(here("data/oxygenDTU.csv.gz"))
+
+impure_samples <- c(
+  "PAC006", "PAC008", "PAC024", "PAC025",
+  "PAC034", "PAC035", "PAC039", "PAC041", 
+  "PAC036", "PAC045", "PAC071", "PAC131"
+  )
+
+pd <- here("data/metadata.csv") %>%
+  read_csv() %>%
+  dplyr::filter(Cohort == "PAC") %>%
+  mutate(Trimester = as.factor(Trimester),
+         Timepoint = ifelse(GestationalAge <= 10,
+                            "6-10weeks",
+                            "11-23weeks")) %>%
+  dplyr::filter(!ID %in% impure_samples) %>%
+  arrange(ID)
+
+# metadata needs to be in this structure
+age_order <- dplyr::arrange(pd, as.numeric(GestationalAge)) %>% 
+  dplyr::select(ID, GestationalAge)
+```
+
+## Annotations
+Load in the ensembl gene annotations here to be used throughout the DTE analysis. This will connect to an ensembl annotation database in which the ensembl version 99 metadata will be stored as an object, giving information on the transcript ID, length, gc content, biotype and other information. This step may take some time as the data can be somewhat large.
+```{r genesGR}
+ah <- AnnotationHub()
+ensDb <- ah[["AH78783"]]
+
+genesGR <- genes(ensDb)
+genesGR$length <- lengthOf(ensDb, "gene")
+transGR <- transcripts(ensDb)
+transGR$gene_name <- mcols(genesGR)[mcols(transGR)$gene_id,"gene_name"]
+transGR$length <- lengthOf(ensDb, "tx")
+```
+
+
+# Gene Ontology (GO) Enrichment Analysis
+For this analysis, we are taking each subset of genes in the venn diagram (figure 2) and looking to see if we can find any GO enrichment for each section. We'll first perform enrichment for each analysis as a whole, and then hone in on the specific overlaps. 
+
+## Get GO annotations
+The `goSummaries` loaded in here contain information on each GO term and their shortest and longest paths
+```{r goSummaries, eval=FALSE}
+goSummaries <- url(
+  "https://uofabioinformaticshub.github.io/summaries2GO/data/goSummaries.RDS"
+  ) %>%
+  readRDS()
+
+write_csv(goSummaries, here("data/go_summaries.csv.gz"))
+```
+
+## Define Background Set
+When we perform the enrichment test on our genes that were significant in either Differential Gene Expression (DGE), Differential Transcript Expression (DTE), and Differential Transcript Usage (DTU), we require a 'background' set of genes. These represent all the genes that are used within the analysis of interest. Specifically they are the genes or transcripts that passed filtering. This is needed to provide a 'context' to our GO analysis and allows us to determine the statistical significance of our the enriched terms identified in our gene subset of interest. 
+Essentially the use of a 'background' to test for enrichment in a subset of genes follows the *hypergeometric distribution* enrichment test.
+
+```{r backgrounds}
+goSummaries <- read_csv(here("data/go_summaries.csv.gz"))
+
+DEG_universe <- oxygenGenes %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+
+DET_universe <- oxygenTranscripts %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+
+DTU_universe <- oxygenDTU %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  as.matrix() %>%
+  as.character()
+```
+
+## Significant Genes from DGE, DTE, and DTU
+The genes identified in these analyses will serve as our subsets of interest. In this way we can determine whether the GO Enrichment from each analysis either reflect one another or are wildly different. If they are all different, it will suggest that only implementing one analysis at a single level fails to capture certain critical information.
+```{r getGeneLists}
+DEG <- oxygenGenes %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DEG <- DEG$DE %>% set_names(DEG$Gene)
+
+DET <- oxygenTranscripts %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DET <- DET %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  left_join(DET %>%
+              dplyr::filter(DE == TRUE),
+            by = "Gene") %>%
+  mutate(DE = is.na(DE) == FALSE)
+
+DET <- DET$DE %>% set_names(DET$Gene)
+
+DTU <- oxygenDTU %>%
+  dplyr::select(Gene, DTU) %>%
+  distinct()
+
+DTU <- DTU$DTU %>% set_names(DTU$Gene)
+```
+
+## Perform GO Analysis using `goseq`
+Now perform goseq analysis on all 1665 genes in the set. The `goseq` package provides some benefit to our analysis as it is able to account for biases within the data, such as transcript lengths or potentially even the number of isoforms.
+
+Below we simply prepare the significant genes from each analysis in preparation for the GO analysis:
+
+### Get DGE Info
+```{r create_gene_vector}
+DEG <- oxygenGenes %>%
+  dplyr::select(Gene,
+                logFC,
+                FDR) %>%
+  distinct() %>%
+  dplyr::mutate(DE = ifelse(
+    FDR < 0.05 & abs(logFC) > 1, TRUE, FALSE
+    )
+  ) %>%
+  dplyr::select(Gene, DE)
+
+DEG_DE <- DEG %>%
+  dplyr::filter(DE == TRUE)
+```
+
+### Get DTE info
+```{r}
+DET <- oxygenTranscripts %>%
+  dplyr::select(Gene,
+                logFC,
+                FDR) %>%
+  dplyr::mutate(DE = ifelse(
+    FDR < 0.05 & abs(logFC) > 1, TRUE, FALSE
+    )
+  ) %>%
+  dplyr::select(Gene, DE) %>%
+  distinct()
+
+DET <- DET %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  left_join(
+    DET %>%
+      dplyr::filter(
+        DE == TRUE
+      ),
+    by = "Gene"
+  ) %>%
+  mutate(DE = is.na(DE) == FALSE)
+
+DET_DE <- DET %>%
+  dplyr::filter(DE == TRUE)
+```
+
+### Get DTU info
+```{r}
+DTU <- oxygenDTU %>%
+  dplyr::select(Gene, DTU) %>%
+  distinct()
+
+DTU_DE <- DTU %>%
+  dplyr::filter(DTU == TRUE) %>%
+  dplyr::rename("DE" = "DTU")
+
+nonDE_genes <- rbind(DEG,
+                     DET,
+                     DTU %>% 
+                       dplyr::rename("DE" = "DTU")) %>%
+  dplyr::select("Gene") %>%
+  distinct() %>%
+  mutate(DE = FALSE)
+```
+
+### Now smack 'em together
+```{r}
+DE_genes <- rbind(DEG_DE,
+                  DET_DE,
+                  DTU_DE) %>%
+  distinct()
+
+nonDE_genes <- nonDE_genes %>% 
+  dplyr::filter(!Gene %in% DE_genes$Gene)
+
+allGenes_GOseq <- rbind(DE_genes, nonDE_genes)
+
+allGO <- allGenes_GOseq$DE %>%
+  set_names(allGenes_GOseq$Gene)
+```
+
+## Account for Bias
+Define length bias data for use in the GO test
+```{r lengthBias}
+ave.len <- transGR$length %>% 
+  set_names(transGR$tx_id)
+
+med.len <- tapply(ave.len, transGR$gene_id, mean)
+
+length_bias <- med.len[match(transGR$gene_id, names(med.len))]
+```
+
+## Perform the test
+The moment we have all been waiting for. 
+
+### Probability Weighting Function
+The `nullp` function will use the biases we defined earlier to calculate a **Probability Weighting Function** for a set of genes based on a given set of biased data (here it is transcript length) and information on whether a gene is DE or not (`TRUE` vs `FALSE`).
+```{r all_GO}
+all_bias <- length_bias[names(allGO)]
+
+pwf <- nullp(allGO,
+             id = "ensGene",
+             bias.data = all_bias,
+             plot.fit = FALSE)
+```
+
+### Gene Ontology Analysis
+Here we perform the GO analysis with transcript length bias accounted for. The **Wallenius** method for the calculation of unbiased category scored is implemented by default.
+```{r}
+GO.wall <- goseq(pwf, "hg19", "ensGene")
+
+GO.wall <- GO.wall %>%
+  mutate(p_adj = p.adjust(over_represented_pvalue, method = "BH"))
+```
+
+## Report Results
+Make the results pretty and put in a table.
+```{r}
+all_GO <- GO.wall %>% 
+  left_join(goSummaries,
+            by = c("category" = "id")) %>%
+  dplyr::filter(shortest_path > 2 & p_adj < 0.05 & numDEInCat > 10) %>%
+  dplyr::select("Category" = "category",
+                "Term" = "term",
+                "Ontology" = "ontology.x",
+                "DE in cat." = "numDEInCat",
+                "Total in cat." = "numInCat",
+                "Shortest path" = "shortest_path",
+                "FDR" = "p_adj")
+
+all_GO <- all_GO %>%
+  mutate("FDR" = formatC(FDR, digits = 2, format = "e"))
+
+res_table <- all_GO %>%
+  dplyr::select("Category",
+                "Term",
+                "Ontology",
+                "DEterm" = "DE in cat.",
+                "Total" = "Total in cat.",
+                "FDR") %>%
+  dplyr::mutate(DEterm = paste0(
+    DEterm, " (", round(divide_by(DEterm, Total)*100, 1), "%)"
+  )) %>%
+  head(20) %>%
+  dplyr::mutate(DEterm = str_replace(DEterm, "21%", "21.0%"),
+                DEterm = str_replace(DEterm, "20%", "20.0%"),
+                DEterm = str_replace(DEterm, "49%", "49.0%")) %>%
+  dplyr::rename("DE in term" = "DEterm") %>%
+  dplyr::select(-"Total") %>%
+  dplyr::mutate(
+    Term = str_replace(Term, " membrane", " MEMBRANE"),
+    Term = str_replace(Term, "migration", "MIGRATION"),
+    Term = str_replace(Term, "signaling", "SIGNALLING"),
+    Term = str_replace(Term, "cellular", "CELLULAR"),
+    Term = str_replace(Term, "binding", "BINDING"),
+    Term = str_replace(Term, "response", "RESPONSE"),
+    Term = str_replace(Term, "regulation", "REGULATION"),
+    Term = str_replace(Term, "receptor", "RECEPTOR")
+  )
+
+DT::datatable(res_table)
+```

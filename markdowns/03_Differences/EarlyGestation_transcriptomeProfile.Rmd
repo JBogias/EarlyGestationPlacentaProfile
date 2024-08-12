@@ -2,12 +2,9 @@
 title: "Transcriptome Profile"
 author: "Justin Bogias"
 date: "`r format(Sys.Date(), '%d %b, %Y')`"
-output:
-  html_document: 
-    toc: yes
-    code_folding: hide
-    toc_float: true
-editor_options: 
+output: 
+  rmdformats::readthedown
+editor_options:
   chunk_output_type: console
 ---
 
@@ -19,7 +16,13 @@ knitr::opts_chunk$set(
 ```
 
 ```{r loadPackages, warning=FALSE, message=FALSE}
-library(tidyverse)
+library(rmarkdown)
+library(rmdformats)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(tibble)
 library(magrittr)
 library(ggplot2)
 library(edgeR)
@@ -28,15 +31,16 @@ library(pheatmap)
 library(VennDiagram)
 library(grid)
 library(gridExtra)
-library(AnnotationHub)
-library(ensembldb)
 library(DT)
 library(here)
 ```
 
 # Import annotations
 Load in the ensembl gene annotations here to be used throughout the DTE analysis. This will connect to an ensembl annotation database in which the ensembl version 99 metadata will be stored as an object, giving information on the transcript ID, length, gc content, biotype and other information. This step may take some time as the data can be somewhat large.
-```{r genesGR}
+```{r genesGR, eval=FALSE}
+library(AnnotationHub)
+library(ensembldb)
+
 ah <- AnnotationHub()
 
 ensDb <- ah[["AH78783"]]
@@ -65,6 +69,8 @@ grch38_txp_anno <- transGR %>%
             by = "transcript_id") %>%
   as_tibble()
 
+write_csv(grch38_txp_anno, here("data/grch38_tx_anno.csv.gz"))
+
 grch38_gene_anno <- genesGR %>%
   as.data.frame() %>%
   dplyr::select("gene_id",
@@ -74,22 +80,34 @@ grch38_gene_anno <- genesGR %>%
                 "gene_biotype") %>%
   as_tibble()
 
+write_csv(grch38_gene_anno, here("data/grch38_gene_anno.csv.gz"))
+
 ensDb <- ah[["AH10684"]]
 transcript_names <- ensDb %>%
   as.data.frame() %>%
   dplyr::filter(type == "transcript") %>%
   dplyr::select("transcript_id",
                 "transcript_name")
+
+write_csv(transcript_names, here("data/grch38_transcript_names.csv.gz"))
+```
+
+## Read in annotation data
+Just read it in here because its quicker
+```{r}
+grch38_txp_anno <- read_csv(here("data/grch38_tx_anno.csv.gz"))
+grch38_gene_anno <- read_csv(here("data/grch38_gene_anno.csv.gz"))
+transcript_names <- read_csv(here("data/grch38_transcript_names.csv.gz"))
 ```
 
 # Load data
 Load the results from each analysis
 ```{r significance_data}
-oxygenGenes <- read_csv(here("data/results/oxygenGenes.csv.gz"))
-oxygenTranscripts <- read_csv(here("data/results/oxygenTranscripts.csv.gz"))
-oxygenDTU <- read_csv(here("data/results/oxygenDTU.csv.gz"))
+oxygenGenes <- read_csv(here("data/oxygenGenes.csv.gz"))
+oxygenTranscripts <- read_csv(here("data/oxygenTranscripts.csv.gz"))
+oxygenDTU <- read_csv(here("data/oxygenDTU.csv.gz"))
 
-dtelist <- read_rds(here("data/counts/dtelist.rds"))
+dtelist <- read_rds(here("data/dtelist.rds"))
 
 impure_samples <- c(
   "PAC006", "PAC008", "PAC024", "PAC025",
@@ -97,7 +115,7 @@ impure_samples <- c(
   "PAC036", "PAC045", "PAC071", "PAC131"
   )
 
-pd <- here("data/metadata/metadata.csv") %>%
+pd <- here("data/metadata.csv") %>%
   read_csv() %>%
   dplyr::filter(Cohort == "PAC") %>%
   mutate(Trimester = as.factor(Trimester),
@@ -110,8 +128,11 @@ age_order <- dplyr::arrange(pd, as.numeric(GestationalAge)) %>%
   dplyr::select(ID, GestationalAge)
 ```
 
-# Figure 2 - Venn diagram
-first we need to create subsets of the genes and transcripts which are considered  to be differentially expressed. With these subsetted lists we can overlap and record just how similar each one is.
+# Differences Between Methods
+I'm interested in finding how DGE, DTE, and DTU differ in their results. This isn't so much a technical goal, but a biological one. Primarily, I am looking for individual transcripts that are either differentially expressed or undergoing changes in proportion while no significant gene expression is seen for their parent gene. This goes for genes undergoing DTU as well. This would mean that changes in transcript expression remain undetected in gene-level analysis. Now I'm not here to talk trash about gene-level analyses, which is why I am equally as interested in the identification of significant genes with no significant transcripts that are differentially expressed or in different proportions. In this case, DGE analysis serves a wonderful purpose in the identification of potentially biologically significant changes in a gene's output that can not be detected in DTE.
+
+First we need to create subsets of the genes and transcripts which are considered  to be differentially expressed. With these subsetted lists we can overlap and record just how similar each one is.
+For the numbers identified in the venn diagram, we are using **only genes**, this is because comparing numbers of genes in DGE, and numbers of transcripts in DTE and DTU would give results showing more statistically significant features identified in DTE and DTU, when that is just because there are more transcripts than genes. It would be very misleading. Also we simply would fail to overlap the results. Basically the question here is: what genes do I identify in each analysis and where do these overlap?
 ```{r significant_genes}
 sig_genes <- oxygenGenes %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1)
@@ -184,7 +205,7 @@ sig_dtu %>%
   datatable()
 ```
 
-Now check for genes that are DGE and DTU but not found in DTE
+Now check for genes that are DGE and DTU but not found in DTE. Basically just doing a full check here. What are the differences?
 ```{r DGE_DTU}
 DGE_DTU <- sig_dtu %>%
   dplyr::filter(Gene %in% sig_genes$Gene) %>%
@@ -200,7 +221,7 @@ sig_dtu %>%
   print()
 ```
 
-Now identify triply overlap genes
+Now identify genes that overlap across all methods. 
 ```{r DGE_DTE_DTU}
 DGE_DTE_DTU <- sig_dtu %>%
   dplyr::filter(Gene %in% sig_tx$Gene,
@@ -220,7 +241,7 @@ sig_dtu %>%
   print()
 ```
 
-Now for genes in both DTE and DGE
+Now lets grab genes in both DTE and DGE, but not in DTU
 ```{r DTE_DGE}
 DTE_DGE <- sig_genes %>%
   dplyr::filter(Gene %in% sig_tx$Gene) %>%
@@ -238,7 +259,7 @@ sig_genes %>%
   print()
 ```
 
-Now get total numbers for the area parameters
+Now we get the total numbers for the area parameters, so we know how many genes were identified in each.
 ```{r DGE_only}
 DGE_number <- sig_genes$Gene %>%
   unique() %>%
@@ -255,14 +276,6 @@ DTU_number <- sig_dtu$Gene %>%
 
 The objects created in the previous code chunck are used here to plot the triple venn diagram which records the level of overlap between each of the different analyses run.
 ```{r draw_venn}
-# Lets draw a triple venn now
-# cat.cex changed from 5 to 3.5
-png(filename = here("data/figures/Figure_2.png"),
-    width = 27.5,
-    height = 21.725,
-    units = "cm",
-    res = 300)
-
 grid.newpage()
 
 v <- draw.triple.venn(
@@ -289,21 +302,22 @@ v <- draw.triple.venn(
   cat.dist = c(0.05, 0.06, 0.075),
   cat.cex = 2,
   scaled = FALSE
-) 
+)
+```
 
+Can add a title if you want, but not necessary for this R markdown
+```{r eval=FALSE}
 grid.arrange(
   gTree(children = v),
   top = textGrob("Overlap of significant genes from DGE, DTE, and DTU analysis",
-                 gp = gpar(fontsize = 22,
+                 gp = gpar(fontsize = 16,
                            font = 2),
                  vjust = 1.5)
 )
-
-dev.off()
 ```
 
-# Figure 3 - Greatest Differences
-In this section I compare the DGE and DTE results in order to find which transcripts are most genuinly masked by aggregation to the gene level. Previously I had used the STAR counts from Jimmy's paper but have instead opted to aggregate my transcript counts to the gene level to see the effect of the going from the transcript-level to the gene-level
+# Greatest Differences Between Gene and Transcript Expression
+In this section I compare the DGE and DTE results in order to find which transcripts are most genuinely masked by aggregation to the gene level. Sometimes transcripts can be masked by expression of a more "dominant" transcripts with multiple folds more expression than it, or a sister transcript that has an similar but opposite change in expression that neutralises any effect on the gene level, or if it has many other transcripts with similar changes in expression that are collapsed into a much seemingly smaller change on the gene level. Here we can take a look at whats happening in the data.
 ```{r DE_Differences}
 DET_DEG_logFC_diff <- oxygenTranscripts %>%
   dplyr::select("Transcript",
@@ -334,8 +348,7 @@ DET_DEG_logFC_diff %>% dplyr::filter(logFC_diff > 1) %>%
     "logFC Diff" = "logFC_diff",
     "txp FDR" = "FDR",
     "gene FDR" = "geneFDR"
-  ) %>%
-  write_csv(here("data/results/top_difference.csv"))
+  )
 
 significance_diff <- DET_DEG_logFC_diff %>% dplyr::filter(geneFDR > 0.05)
 
@@ -347,11 +360,12 @@ DET_DEG_logFC_diff %>%
     "Gene Name" = "GeneName",
     "logFC",
     "FDR"
-  ) %>%
-  write_csv(here("data/results/txp_only.csv"))
+  )
+
+DT::datatable(DET_DEG_logFC_diff)
 ```
 
-Can we do the test? If the logFCs are in the opposite direction, some differences in logFC would be telling us the wrong thing
+We should check to make sure the logFCs are not in the opposite direction between our gene and transcript counts. If differences in logFC cancel out then these results would be telling us the wrong thing
 ```{r}
 sig_tx %>%
   dplyr::select(
@@ -374,10 +388,9 @@ sig_tx %>%
   theme(axis.title = element_text(size = 20),
         axis.text = element_text(size = 20))
 ```
-Seems only CSH2 has a conflicting logFC 
-Good to see I still see this even now!
 
-# Compare FDR and logFC
+## Compare FDR and logFC between genes and transcripts
+Lets see if there are any major differences between the FDR values for genes and transcripts, then extend this check to logFC
 ```{r compare}
 gene_tx_diff <- DET_DEG_logFC_diff %>%
   dplyr::filter(logFC_diff > 1) %>%
@@ -394,12 +407,13 @@ gene_tx_diff <- DET_DEG_logFC_diff %>%
     "geneFDR"
   ) 
 
-gene_tx_diff %>%
-  write_csv(here("data/results/figure3_transcripts.csv"))
+DT::datatable(gene_tx_diff)
 ```
 
 
 ## Scale CPM for heatmap
+Now we will plot out these differences. We will use a heatmap that can be made with the `pheatmap` package. I prefer this over manually making one with `ggplot2` as we can make nice annotation bars without needing to call `grid` or `cowplot`
+We just want to make sure we have defined the order of our clusters in `clusterOrder` for visualisation purposes and appropriately scale our values to get the contrasting colours in the plot. Then lock everything up as a matrix
 ```{r scaledCPM}
 ## Scale by rows
 # In this function we are calculating the mean and standard deviation for every row of the
@@ -448,6 +462,7 @@ scaled_cpm <- dtelist %>%
 ```
 
 ## Plot pheatmap
+With everything ready lets make this heatmap. We also want to define out annotation column. This should have rownames that correspond to the sample IDs in our matrix. This way, `pheatmap` will automatically know how to visualise the annotations 
 ```{r cluster_pheatmap}
 clusteredMatrix <- scaled_cpm[clusterOrder, ]
 clusteredMatrix <- clusteredMatrix[, (pd %>% 
@@ -487,14 +502,8 @@ gene_row_order <- transcript_names %>%
 gene_row_order[clusterOrder, ]
 ```
 
-Save figure 3
+And now we have the heatmap ready for visualisation
 ```{r}
-png(filename = here("data/figures/Figure_3.png"),
-    width = 27.5,
-    height = 21.725,
-    units = "cm",
-    res = 300)
-
 pheatmap(clusteredMatrix,
          color = plasma(84),
          border_color = NA,
@@ -504,18 +513,18 @@ pheatmap(clusteredMatrix,
            "Top 15 transcripts with greatest\n expression",
            " differences to the gene level"
          ),
-         fontsize = 16,
+         fontsize = 10,
          gaps_col = 27,
          cutree_rows = 4,
          clustering_method = "ward.D2",
          annotation_col = ann_col)
-
-dev.off()
 ```
 
 # Transcriptome profile
+In this section I simply ask a few questions of the data. The purpose is so that I can offer a more in-depth understanding of what is within the data. This is kind of a data-driven approach, I'm not certain on what to find, and I am not testing anything. Just a bit of fun exploring to do
 
-How many significant genes across all analyses?
+## Analysis Result Info
+### How many significant genes across all analyses?
 ```{r all_genes}
 all_genes <- c(sig_tx$Gene, sig_genes$Gene, sig_dtu$Gene) %>%
   unique()
@@ -523,7 +532,7 @@ all_genes <- c(sig_tx$Gene, sig_genes$Gene, sig_dtu$Gene) %>%
 print(length(all_genes))
 ```
 
-How many non coding in all 1642 genes?
+### How many non coding in all 1642 genes?
 ```{r non_coding_genes}
 grch38_gene_anno %>%
   dplyr::filter(gene_id %in% all_genes) %>%
@@ -531,7 +540,7 @@ grch38_gene_anno %>%
   print()
 ```
 
-What are the lncRNAs?
+### What are the lncRNAs?
 ```{r lncRNAs}
 lncRNAs <- grch38_gene_anno %>%
   dplyr::filter(gene_id %in% all_genes) %>%
@@ -550,7 +559,7 @@ sig_dtu %>%
   print()
 ```
 
-What are all the significant transcripts between DTE and DTU?
+### What are all the significant transcripts between DTE and DTU?
 ```{r sig_txs}
 all_tx <- c(sig_tx$Transcript, sig_dtu$Transcript) %>%
   unique()
@@ -563,7 +572,7 @@ all_tx_genes <- c(sig_tx$Gene, sig_dtu$Gene) %>%
 print(length(all_tx_genes))
 ```
 
-How many isoforms did these genes have?
+### How many isoforms did these genes have?
 ```{r isoforms}
 oxygenTranscripts %>% 
   dplyr::select("Gene",
@@ -576,25 +585,28 @@ oxygenTranscripts %>%
   dplyr::count(Gene, sort = TRUE) %>%
   dplyr::count(n, sort = TRUE, name = "Number of Genes") %>%
   dplyr::rename("Isoforms" = "n") %>%
-  print()
+  DT::datatable()
 ```
 
-What types of transcripts were they?
+### What types of transcripts were they?
 ```{r transcript_biotypes}
 grch38_txp_anno %>%
   dplyr::filter(transcript_id %in% all_tx) %>%
   dplyr::count(transcript_biotype, sort = TRUE) %>%
-  print()
+  DT::datatable()
 ```
 
-Info on the triple overlap genes
+## Info on the triple overlap genes
 ```{r}
 triple_genes <- sig_dtu %>%
   dplyr::filter(Gene %in% sig_tx$Gene,
                 Gene %in% sig_genes$Gene) %>%
   dplyr::select(Gene) %>%
   distinct()
+```
 
+What are the overlapped genes in DTE results?
+```{r}
 oxygenTranscripts %>%
   dplyr::filter(Gene %in% triple_genes$Gene) %>%
   dplyr::select("Gene",
@@ -603,8 +615,12 @@ oxygenTranscripts %>%
                 "TranscriptName",
                 "logFC",
                 "FDR") %>%
-  dplyr::count(GeneName, sort = TRUE)
+  dplyr::count(GeneName, sort = TRUE) %>%
+  DT::datatable()
+```
 
+What are the overlapped genes in DTU results?
+```{r}
 oxygenDTU %>%
   dplyr::filter(Gene %in% triple_genes$Gene) %>%
   dplyr::select("Gene",
@@ -613,8 +629,12 @@ oxygenDTU %>%
                 "TranscriptName" = "transcript_name",
                 "geneFDR",
                 "txpFDR") %>%
-  dplyr::count(GeneName, sort = TRUE)
+  dplyr::count(GeneName, sort = TRUE) %>%
+  DT::datatable()
+```
 
+What are the significant overlapped genes in DTE results?
+```{r}
 oxygenTranscripts %>%
   dplyr::filter(Gene %in% triple_genes$Gene) %>%
   dplyr::select("Gene",
@@ -624,34 +644,44 @@ oxygenTranscripts %>%
                 "logFC",
                 "FDR") %>%
   dplyr::filter(FDR < 0.05 & abs(logFC) > 1) %>%
-  dplyr::count(GeneName, sort = TRUE)
-
-oxygenDTU %>%
-  dplyr::filter(Gene %in% triple_genes$Gene) %>%
-  dplyr::select("Gene",
-                "GeneName" = "gene_name",
-                "Transcript",
-                "TranscriptName" = "transcript_name",
-                "geneFDR",
-                "txpFDR") %>%
-  dplyr::filter(geneFDR < 0.05 & txpFDR < 0.05) %>%
   dplyr::count(GeneName, sort = TRUE) %>%
-  dplyr::filter(n > 1)
-
-oxygenDTU %>%
-  dplyr::filter(Gene %in% triple_genes$Gene) %>%
-  dplyr::select("Gene",
-                "GeneName" = "gene_name",
-                "Transcript",
-                "TranscriptName" = "transcript_name",
-                "geneFDR",
-                "txpFDR") %>%
-  dplyr::filter(geneFDR < 0.05 & txpFDR < 0.05) %>%
-  dplyr::count(GeneName, sort = TRUE) %>%
-  dplyr::filter(n == 1)
+  DT::datatable()
 ```
 
-## What are their biotypes?
+What are the significant overlapped genes in DTU results?
+```{r}
+oxygenDTU %>%
+  dplyr::filter(Gene %in% triple_genes$Gene) %>%
+  dplyr::select("Gene",
+                "GeneName" = "gene_name",
+                "Transcript",
+                "TranscriptName" = "transcript_name",
+                "geneFDR",
+                "txpFDR") %>%
+  dplyr::filter(geneFDR < 0.05 & txpFDR < 0.05) %>%
+  dplyr::count(GeneName, sort = TRUE) %>%
+  dplyr::filter(n > 1) %>%
+  DT::datatable()
+```
+
+The same but which ones appear only once?
+```{r}
+oxygenDTU %>%
+  dplyr::filter(Gene %in% triple_genes$Gene) %>%
+  dplyr::select("Gene",
+                "GeneName" = "gene_name",
+                "Transcript",
+                "TranscriptName" = "transcript_name",
+                "geneFDR",
+                "txpFDR") %>%
+  dplyr::filter(geneFDR < 0.05 & txpFDR < 0.05) %>%
+  dplyr::count(GeneName, sort = TRUE) %>%
+  dplyr::filter(n == 1) %>%
+  DT::datatable()
+```
+
+## Transcript specific information
+### What are their biotypes?
 ```{r}
 oxt_tx_triple <- oxygenTranscripts %>%
   dplyr::filter(Gene %in% triple_genes$Gene)
@@ -666,33 +696,36 @@ all(oxy_dtu_triple$Transcript %in% oxt_tx_triple$Transcript)
 
 oxt_tx_triple %>%
   dplyr::count(Transcript_biotype) %>%
-  print()
+  DT::datatable()
 ```
 
-What transcripts have retained introns?
+### What transcripts have retained introns?
 ```{r}
 oxt_tx_triple %>% 
-  dplyr::filter(Transcript_biotype == "retained_intron")
+  dplyr::filter(Transcript_biotype == "retained_intron") %>%
+  DT::datatable()
 ```
 
-What transcripts have untranslated transcripts?
+### What transcripts have untranslated transcripts?
 ```{r}
 oxt_tx_triple %>%
-  dplyr::filter(Transcript_biotype == "processed_transcript")
+  dplyr::filter(Transcript_biotype == "processed_transcript") %>%
+  DT::datatable()
 ```
 
-Which transcript is targeted by nonsense mediated decay?
+### Which transcripts are targeted by nonsense mediated decay?
 ```{r}
 oxt_tx_triple %>%
-  dplyr::filter(Transcript_biotype == "nonsense_mediated_decay")
+  dplyr::filter(Transcript_biotype == "nonsense_mediated_decay") %>%
+  DT::datatable()
 ```
 
-
-## How many isoforms in genes?
+## Isoform information in genes
+### How many isoforms transcribed by each gene?
 ```{r}
 sig_tx %>%
   dplyr::count(Gene, sort = TRUE) %>%
-  print()
+  DT::datatable()
 
 sig_tx %>% 
   dplyr::count(Gene,
@@ -700,10 +733,10 @@ sig_tx %>%
                name = "isoforms") %>%
   dplyr::count(isoforms,
                sort = TRUE) %>%
-  print()
+  DT::datatable()
 ```
 
-Which genes had the most amount of significantly DE isoforms?
+### Which genes had the most amount of significantly DE isoforms?
 ```{r}
 sig_tx %>%
   dplyr::count(Gene, sort = TRUE) %>%
@@ -711,12 +744,13 @@ sig_tx %>%
               dplyr::select("Gene", "GeneName") %>%
               distinct(),
             by = "Gene") %>%
-  print()
+  DT::datatable()
 ```
 
-## Figure 3 transcripts information
+## Heatmap transcripts information
 ```{r}
 oxygenTranscripts %>%
-  dplyr::filter(TranscriptName %in% rownames(clusteredMatrix))
+  dplyr::filter(TranscriptName %in% rownames(clusteredMatrix)) %>%
+  DT::datatable()
 ```
 

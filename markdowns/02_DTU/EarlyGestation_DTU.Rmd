@@ -372,6 +372,10 @@ oxygenDTU <- oxygenDTU %>%
   mutate("DTU" = geneFDR < 0.05)
 ```
 
+```{r}
+write_csv(oxygenDTU, here("data/oxygenDTU.csv.gz"))
+```
+
 The numbers of genes undergoing DTU and transcripts showing a significant change in proportion are shown here
 ```{r}
 sig_dtu <- oxygenDTU %>%
