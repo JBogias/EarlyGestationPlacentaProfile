@@ -1,0 +1,41 @@
+.markdown_frame {
+  margin: 5vh 15vw 5vh 15vw;
+  border: 6px black solid;
+  border-radius: 15px;
+  box-shadow: 10px 10px black;
+}
+
+.tab-panel {
+  background-color: #DFDFDF;
+  margin: 0px;
+  padding: 0px;
+  width: 100vw;
+}
+
+.fluid-page {
+  background-color: #242424;
+  color: #DFDFDF;
+  width: 100vw;
+}
+
+.container-fluid {
+  padding: 0px;
+}
+
+ul.nav.nav-tabs {
+  background: #9F2042;
+  padding-bottom: 5px;
+  margin: 0px;
+  width: 100vw;
+}
+
+a {
+  background-color: #9F2042;
+  color: #EFEFEF;
+  border: 2px black solid;
+  border-radius: 10px;
+}
+
+h2 {
+  padding-left: 15px;
+}
