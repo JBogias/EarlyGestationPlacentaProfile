@@ -1,0 +1,41 @@
+services:
+  00_EarlyGestation_composed:
+    build: ./00_EarlyGestation_composed
+    image: jbogias/00_early_gestation
+    ports:
+      - "4000:3837"
+  01_DE:
+    build: ./01_DE
+    image: jbogias/01_de
+    ports:
+      - "4001:3838"
+  02_DTU:
+    build: ./02_DTU
+    image: jbogias/02_dtu
+    ports:
+      - "4002:3838"
+  03_Differences:
+    build: ./03_Differences
+    image: jbogias/03_differences
+    ports:
+      - "4003:3838"
+  04_ADAM10_Plotting:
+    build: ./04_ADAM10_Plotting
+    image: jbogias/04_adam10
+    ports:
+      - "4004:3838"
+  05_GO_analysis:
+    build: ./05_GO_analysis
+    image: jbogias/05_go_analysis
+    ports:
+      - "4005:3838"
+  06_SupplementaryFigures:
+    build: ./06_SupplementaryFigures
+    image: jbogias/06_supp_figs
+    ports:
+      - "4006:3838"
+  07_SupplementaryTables:
+    build: ./07_SupplementaryTables
+    image: jbogias/07_supp_tbls
+    ports:
+      - "4007:3838"
