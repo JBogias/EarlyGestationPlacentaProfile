@@ -6,10 +6,6 @@
 #' 
 #' 
 
-source(here("R/plot_expression.R"))
-source(here("R/plot_proportions.R"))
-source(here("R/plot_structures.R"))
-
 txprofiler <- function(dgelist,
                        dtelist,
                        target_gene,
