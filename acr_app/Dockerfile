@@ -1,9 +1,16 @@
 FROM rocker/r-ver:4.4.1
 
-RUN apt-get update && apt-get install -y \
-    libcurl4-openssl-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    jq \
+    sudo \
+    libcurl4-gnutls-dev \
+    libcairo2-dev \
+    libxt-dev \
     libssl-dev \
-    libxml2-dev \
+    libssh2-1-dev \
+    pandoc libsz2 libhdf5-dev libcurl4-gnutls-dev libuv1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 RUN R -e "install.packages(c('shiny', 'renv'))"
